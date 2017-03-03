@@ -9,6 +9,14 @@ public class Pair<L, R> {
     public static <L, R> Pair<L, R> of(L left, R right) {
         return new Pair<>(left, right);
     }
+
+    public static <L, R> Pair<L, R> right(R right) {
+        return Pair.of(null, right);
+    }
+
+    public static <L, R> Pair<L, R> left(L left) {
+        return Pair.of(left, null);
+    }
     private final L left;
     private final R right;
 
@@ -24,5 +32,5 @@ public class Pair<L, R> {
     public R getRight() {
         return right;
     }
-    
+
 }

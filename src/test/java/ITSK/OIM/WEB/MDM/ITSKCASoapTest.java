@@ -1,6 +1,8 @@
 package ITSK.OIM.WEB.MDM;
 
 import java.util.HashMap;
+import org.hamcrest.CoreMatchers;
+import static org.hamcrest.CoreMatchers.is;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -40,15 +42,20 @@ public class ITSKCASoapTest {
 
     @Test
     public void shouldReturnAnEmptyResponse() throws Exception {
-        final RegAuthLegacyContract response = mock(RegAuthLegacyContract.class);
+        final RegAuthLegacyContract port = mock(RegAuthLegacyContract.class);
         final HashMap params = new HashMap();
+        final ResponseITSKCASoap response = new ResponseITSKCASoap();
+        final String email = "ciukstar@yahoo.com";
+        final String CAOIDemail = "1.2.840.113549.1.9.1";
         
-        when(uc.initializeCA(any(HashMap.class), any(ResponseITSKCASoap.class)))
-                .thenReturn(response);
+        when(uc.initializeCA(params, response)).thenReturn(port);
         
-        ResponseITSKCASoap respose = sample.createUser("ciukstar@yahoo.com", "ciukstar", "Sergiu Starciuc", params);
+        ResponseITSKCASoap result = sample.createUser(email, "ciukstar", "Sergiu Starciuc", params);
 
-        assertTrue(respose.isEmpty());
+        final String expectedLog = "Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email;
+        
+        assertTrue(result.isEmpty());
+        assertThat(result.getLog(), is(expectedLog));
         
     }
     

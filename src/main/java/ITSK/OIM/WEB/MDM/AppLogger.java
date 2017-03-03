@@ -10,7 +10,7 @@ import su.jet.oim.utils.NotificationUtils;
  * @author sergiu
  */
 public class AppLogger {
-    
+
     String getShortStackTrace(String st, int line) {
         String[] split = st.split("\n");
         StringBuilder sb = new StringBuilder();
@@ -25,26 +25,29 @@ public class AppLogger {
         return sb.toString();
     }
 
-    void setErrorLog(String logString, ResponseITSKCASoap response, Class<?> clazz) {
-        //Utils.setProcessTaskNote(taskId, taskNote);
-        //notifyAdminAboutError(logString);
-        String ss = "";
-        ss = getShortStackTrace(logString, 20);
-        response.log = response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<ERROR> " + ss + "\n";
-        //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<ERROR> " + logString + "\n";
-        System.out.println(logString);
-        NotificationUtils.notifyAboutAnyExeption(logString);
-        Logger.getLogger(clazz.getName()).log(Level.SEVERE, logString);
+    String logError(String msg, Class<?> clazz, Date time) {
+        final String format = "<%s> <%s> <MDM> <ERROR> %s%n";
+        final String entry = String.format(format, time.toString(), clazz.toString(), getShortStackTrace(msg, 20));
+        System.out.println(msg);
+        NotificationUtils.notifyAboutAnyExeption(msg);
+        Logger.getLogger(clazz.getName()).log(Level.SEVERE, msg);
+        return entry;
     }
 
-    void setLog(String msg, ResponseITSKCASoap response, Class<?> clazz, Date time) {
-        final String format = "<%s> <%s> <MDM> <LOG> %s%n";
-        response.appendLog(String.format(format, time.toString(), clazz.toString(), msg));
-        System.out.println(response.log);
-        Logger.getLogger(clazz.getName()).finest(response.log);
+    String logError(String msg, Class<?> clazz) {
+        return logError(msg, clazz, new Date());
     }
-    void setLog(String msg, ResponseITSKCASoap response, Class<?> clazz) {
-        setLog(msg, response, clazz, new Date());
+
+    String log(String msg, Class<?> clazz, Date time) {
+        final String format = "<%s> <%s> <MDM> <LOG> %s%n";
+        final String entry = String.format(format, time.toString(), clazz.toString(), msg);
+        System.out.println(entry);
+        Logger.getLogger(clazz.getName()).finest(entry);
+        return entry;
+    }
+
+    String log(String msg, Class<?> clazz) {
+        return log(msg, clazz, new Date());
     }
 
 }

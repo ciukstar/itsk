@@ -13,7 +13,6 @@ import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import javax.xml.ws.Holder;
@@ -41,7 +40,6 @@ import ru.CryptoPro.JCP.params.OID;
  */
 public class ITSKCASoap {
 
-    private ResponseITSKCASoap response = new ResponseITSKCASoap();
     private final CredLoader credLoader;
     private final UC uc;
     private final AppLogger logger;
@@ -55,6 +53,7 @@ public class ITSKCASoap {
     }
 
     public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap params) throws Exception {
+        ResponseITSKCASoap response = new ResponseITSKCASoap();
 
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
@@ -81,18 +80,22 @@ public class ITSKCASoap {
             final List<String> parseAttrs = new ArrayList<>();
             parseAttrs.add("UserId");
 
-            logger.setLog("Begin find user " + email + " in CA", response, this.getClass());
-
+            response.appendLog(
+                    logger.log("Begin find user " + email + " in CA", this.getClass())
+            );
+            if (true)
+            return new ResponseITSKCASoap();
             //Инициализировать подключение к УЦ
-            final RegAuthLegacyContract port = uc.initializeCA(params, response);
+            RegAuthLegacyContract port = uc.initializeCA(params, response);
             //Поск пользователя УЦ
-            final HashMap<String, Object> resultFindUserCA 
+            final HashMap<String, Object> resultFindUserCA
                     = uc.findUcUser(params, folderID, port, CAOIDemail, email, response);
 
-            if (resultFindUserCA.isEmpty()) {
+            if (true || resultFindUserCA.isEmpty()) {
+                final String msg = "Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email;
 
-                logger.setErrorLog("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, response, this.getClass());
                 response.setPropertyMap(result);
+                response.appendLog(logger.logError(msg, this.getClass()));
                 return response;
 
             } else if ((int) resultFindUserCA.get("resultCount") > 0) {
@@ -104,24 +107,24 @@ public class ITSKCASoap {
                 if (resultParseXML.size() > 0) {
                     final List<List<String>> users = resultParseXML;
 
-                    logger.setLog("Parsing result search user " + email + " complite", response, this.getClass());
+                    response.appendLog(logger.log("Parsing result search user " + email + " complite", this.getClass()));
 
                     if (users.size() == 1) {
                         final String userId = users.get(0).get(0);
                         result.put("UserId", userId);
                         if (userId.isEmpty()) {
-                            logger.setErrorLog("Error: Not parsing result find CA user", response, this.getClass());
+                            response.appendLog(logger.logError("Error: Not parsing result find CA user", this.getClass()));
                             response.propertyMap = result;
                             return response;
                         }
 
-                        logger.setLog("User found, User ID: " + userId, response, this.getClass());
+                        response.appendLog(logger.log("User found, User ID: " + userId, this.getClass()));
 
                         if (users.get(0).get(1).equals("A")) {
                             //Создать маркер временного доступа для пользователя
-                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
+                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword, response);
                             if (!resultCreateTokenForUser.isEmpty()) {
-                                logger.setLog("Create Marker CA for user, User ID: " + userId + " Complite", response, this.getClass());
+                                response.appendLog(logger.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
 
                                 response.result = "SUCCESS";
                                 result.putAll(resultCreateTokenForUser);
@@ -134,7 +137,7 @@ public class ITSKCASoap {
                             }
 
                         } else {
-                            logger.setErrorLog("Error: user" + email + "is not active status", response, this.getClass());
+                            response.appendLog(logger.logError("Error: user" + email + "is not active status", this.getClass()));
                             response.propertyMap = result;
                             return response;
                         }
@@ -152,12 +155,12 @@ public class ITSKCASoap {
                         }
                         if (j == 1) {
 
-                            logger.setLog("Found one active user CA for user email: " + email + "User ID:" + userId, response, this.getClass());
+                            response.appendLog(logger.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
 
                             //Создать маркер временного доступа для пользователя
-                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
+                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword, response);
                             if (!resultCreateTokenForUser.isEmpty()) {
-                                logger.setLog("Create Marker CA for user, User ID: " + userId + " Complite", response, this.getClass());
+                                response.appendLog(logger.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
                                 response.result = "SUCCESS";
                                 result.putAll(resultCreateTokenForUser);
                                 response.propertyMap = result;
@@ -169,7 +172,7 @@ public class ITSKCASoap {
 
                         } else {
                             //Ошибка, найдено больше одного пользователя
-                            logger.setErrorLog("Error: In CA found more than one active user for email" + email, response, this.getClass());
+                            response.appendLog(logger.logError("Error: In CA found more than one active user for email" + email, this.getClass()));
                             response.propertyMap = result;
                             return response;
                         }
@@ -179,7 +182,7 @@ public class ITSKCASoap {
                 }
 
             } else {
-                logger.setLog("User not found, Email: " + email, response, this.getClass());
+                response.appendLog(logger.log("User not found, Email: " + email, this.getClass()));
 
                 //Сформировать запрос на регисрацию пользователя
                 final String regRequest = "<ProfileAttributesChange> \n"
@@ -190,13 +193,13 @@ public class ITSKCASoap {
                         + "</To> \n"
                         + "</ProfileAttributesChange> \n";
 
-                logger.setLog("Request for create user CA complite, Request: \n" + regRequest, response, this.getClass());
+                response.appendLog(logger.log("Request for create user CA complite, Request: \n" + regRequest, this.getClass()));
 
                 final Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
                 //Подписать запрос
-                final String resultSignRequestCABase64 = signRequestCA(regRequest, cred.getLeft(), cred.getRight());
+                final String resultSignRequestCABase64 = signRequestCA(regRequest, cred.getLeft(), cred.getRight(), response);
                 if (!resultSignRequestCABase64.isEmpty()) {
-                    logger.setLog("Request is signed", response, this.getClass());
+                    response.appendLog(logger.log("Request is signed", this.getClass()));
                     //Выполнить запрос на регистрацию пользователя УЦ
                     final String keyPhrase = "key";
                     final String description = "СУИД:Предоставление доступа в УЦ";
@@ -215,17 +218,17 @@ public class ITSKCASoap {
                         final String userId = resultParseXML.get(0).get(0);
                         result.put("UserId", userId);
 
-                        logger.setLog("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + userId, response, this.getClass());
+                        response.appendLog(logger.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + userId, this.getClass()));
 
                         if (userId.isEmpty()) {
-                            logger.setErrorLog("Error in the create new CA user, Not parsing result find userID for RegRequest", response, this.getClass());
+                            response.appendLog(logger.logError("Error in the create new CA user, Not parsing result find userID for RegRequest", this.getClass()));
                             response.propertyMap = result;
                             return response;
                         } else {
                             //Создать маркер временного доступа для пользователя
-                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
+                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword, response);
                             if (!resultCreateTokenForUser.isEmpty()) {
-                                logger.setLog("Create Token for user: " + userId + " Email: " + email, response, this.getClass());
+                                response.appendLog(logger.log("Create Token for user: " + userId + " Email: " + email, this.getClass()));
 
                                 result.putAll(resultCreateTokenForUser);
                                 response.result = "SUCCESS";
@@ -239,7 +242,7 @@ public class ITSKCASoap {
                         }
                     } else {
                         //Ошибка, найдено больше одного пользователя
-                        logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
+                        response.appendLog(logger.logError("Error: Parsing result found more than one CA user", this.getClass()));
                         response.propertyMap = result;
                         return response;
                     }
@@ -249,7 +252,7 @@ public class ITSKCASoap {
 
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
+            response.appendLog(logger.logError(ss, this.getClass()));
             //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
             response.propertyMap = result;
             return response;
@@ -262,12 +265,12 @@ public class ITSKCASoap {
         return response;
     }
 
-
     public HashMap createTokenForUser(
             RegAuthLegacyContract port,
             String userID,
             Holder<String> webLogin,
-            Holder<String> webPassword
+            Holder<String> webPassword,
+            ResponseITSKCASoap response
     ) throws RegAuthLegacyContractCreateTokenForUserErrorInfoFaultMessage {
 
         HashMap result = new HashMap();
@@ -277,13 +280,13 @@ public class ITSKCASoap {
             result.put("webPassword", webPassword.value);
             return result;
         } catch (Exception e) {
-            logger.setErrorLog(getStackTrace(e), response, this.getClass());
+            response.appendLog(logger.logError(getStackTrace(e), this.getClass()));
             return result;
         }
     }
 
-
     public ResponseITSKCASoap revokeUser(String Email, String UserID, int RevocationReason, HashMap Params) throws Exception {
+        ResponseITSKCASoap response = new ResponseITSKCASoap();
 
         HashMap result = new HashMap();
 
@@ -342,13 +345,13 @@ public class ITSKCASoap {
                     FlagFindEmail = 1;
 
                 } else if ((int) ResultFindUserCA.get("resultCount") > 0) {
-                    logger.setLog("Find user " + UserID + " in CA", response, this.getClass());
+                    response.appendLog(logger.log("Find user " + UserID + " in CA", this.getClass()));
 
                     if (ResultFindUserCA.get("resultCount").equals(1)) {
                         //Получить список сертификатов пользователя УЦ
                         port.getCertificateRecordList(folderID, "V", "", Boolean.TRUE, "UserId", UserID, 8, 1, 100, Boolean.TRUE, getCertificateRecordListResult, resultCount, totalRowCount);
                         if (resultCount.value > 0) {
-                            logger.setLog("complite find list of certificates CA, userID " + UserID, response, this.getClass());
+                            response.appendLog(logger.log("complite find list of certificates CA, userID " + UserID, this.getClass()));
                             //Парсинг результата поиска сертификатов пользователя УЦ
                             resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
 
@@ -357,21 +360,21 @@ public class ITSKCASoap {
                                 RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                 //Подписать запрос
-                                resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert);
+                                resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
 
                                 //Отзыв сертификатов пользователя
                                 resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
 
                                 //Сохраняем сертификаты на отзыв
                                 revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.get(i).get(0) + ";";
-                                logger.setLog("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, response, this.getClass());
+                                response.appendLog(logger.log("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, this.getClass()));
 
                             }
 
-                            logger.setLog("Revoke user certificates is complite, userID " + UserID + " in CA", response, this.getClass());
+                            response.appendLog(logger.log("Revoke user certificates is complite, userID " + UserID + " in CA", this.getClass()));
                             result.put("CertList", revCertList);
                         } else {
-                            logger.setLog("Not found active certificates in CA for user " + Email, response, this.getClass());
+                            response.appendLog(logger.log("Not found active certificates in CA for user " + Email, this.getClass()));
                         }
 
                         /*
@@ -384,7 +387,7 @@ public class ITSKCASoap {
                             //Блокируем пользователя УЦ
                              port.deactivateUser(UserID, Boolean.TRUE);
                          }
-                        setLog("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
+                        log("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
                          */
                         response.result = "SUCCESS";
                         response.propertyMap = result;
@@ -399,14 +402,14 @@ public class ITSKCASoap {
             if (FlagFindEmail == 1) {
                 ResultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port, response);
                 if (ResultFindUserCA.isEmpty()) {
-                    logger.setErrorLog("Error in process find CA user, filter:" + CAOIDemail + "->" + Email, response, this.getClass());
+                    response.appendLog(logger.logError("Error in process find CA user, filter:" + CAOIDemail + "->" + Email, this.getClass()));
                     response.propertyMap = result;
                     return response;
 
                 } else if ((int) ResultFindUserCA.get("resultCount") > 0) {
 
                     if (ResultFindUserCA.get("resultCount").equals(1)) {
-                        logger.setLog("Find user for email" + Email + " in CA", response, this.getClass());
+                        response.appendLog(logger.log("Find user for email" + Email + " in CA", this.getClass()));
                         //Парсинг результата поиска пользователя УЦ
                         resultParseXML = parser.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
 
@@ -414,10 +417,10 @@ public class ITSKCASoap {
                             CAuserID = resultParseXML.get(0).get(0);
                             result.put("UserId", CAuserID);
 
-                            logger.setLog("Parsing result search user " + CAuserID + " complite", response, this.getClass());
+                            response.appendLog(logger.log("Parsing result search user " + CAuserID + " complite", this.getClass()));
 
                             if (CAuserID.isEmpty()) {
-                                logger.setErrorLog("Error: Not parsing result find CA user", response, this.getClass());
+                                response.appendLog(logger.logError("Error: Not parsing result find CA user", this.getClass()));
                                 response.propertyMap = result;
                                 return response;
                             }
@@ -425,7 +428,7 @@ public class ITSKCASoap {
                             //Получить список сертификатов пользователя УЦ
                             port.getCertificateRecordList(folderID, "V", "", Boolean.TRUE, "UserId", CAuserID, 8, 1, 100, Boolean.TRUE, getCertificateRecordListResult, resultCount, totalRowCount);
                             if (resultCount.value > 0) {
-                                logger.setLog("Complite find list of certificates, userID " + CAuserID + " in CA", response, this.getClass());
+                                response.appendLog(logger.log("Complite find list of certificates, userID " + CAuserID + " in CA", this.getClass()));
 
                                 //Парсинг результата поиска сертификатов пользователя УЦ
                                 resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
@@ -435,21 +438,21 @@ public class ITSKCASoap {
                                     RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                     //Подписать запрос
-                                    resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert);
+                                    resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
 
                                     //Отзыв сертификатов пользователя
                                     resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
 
                                     //Сохраняем сертификаты на отзыв
                                     revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.get(i).get(0) + ";";
-                                    logger.setLog("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, response, this.getClass());
+                                    response.appendLog(logger.log("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, this.getClass()));
 
                                 }
 
-                                logger.setLog("Revoke user certificates is complite, userID " + UserID + " in CA", response, this.getClass());
+                                response.appendLog(logger.log("Revoke user certificates is complite, userID " + UserID + " in CA", this.getClass()));
                                 result.put("CertList", revCertList);
                             } else {
-                                logger.setLog("Not found active certificates in CA for user " + Email, response, this.getClass());
+                                response.appendLog(logger.log("Not found active certificates in CA for user " + Email, this.getClass()));
                             }
 
                             /*
@@ -463,7 +466,7 @@ public class ITSKCASoap {
                             //Блокируем пользователя УЦ
                              port.deactivateUser(CAuserID, Boolean.TRUE);
                          }
-                        setLog("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
+                        log("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
                              */
                             response.result = "SUCCESS";
                             response.propertyMap = result;
@@ -471,7 +474,7 @@ public class ITSKCASoap {
 
                         } else {
                             //Ошибка, не найден ни один пользователь
-                            logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
+                            response.appendLog(logger.logError("Error: Parsing result found more than one CA user", this.getClass()));
                             response.propertyMap = result;
                             return response;
                         }
@@ -494,31 +497,31 @@ public class ITSKCASoap {
 
                             }
                             if (j == 1) {
-                                logger.setLog("Find user " + CAuserID + " in CA", response, this.getClass());
+                                response.appendLog(logger.log("Find user " + CAuserID + " in CA", this.getClass()));
 
                                 //Получить список сертификатов пользователя УЦ
                                 port.getCertificateRecordList(folderID, "V", "", Boolean.TRUE, "UserId", CAuserID, 8, 1, 100, Boolean.TRUE, getCertificateRecordListResult, resultCount, totalRowCount);
                                 if (resultCount.value > 0) {
-                                    logger.setLog("Complite find list of certificates, userID " + CAuserID + " in CA", response, this.getClass());
+                                    response.appendLog(logger.log("Complite find list of certificates, userID " + CAuserID + " in CA", this.getClass()));
                                     //Сформировать запрос на отзыв сертификатов пользователя
                                     for (int i = 0; i < resultParseXML.size(); i++) {
                                         RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                         //Подписать запрос
-                                        resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert);
+                                        resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
 
                                         //Отзыв сертификатов пользователя
                                         resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
 
                                         revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.get(i).get(0) + ";";
-                                        logger.setLog("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, response, this.getClass());
+                                        response.appendLog(logger.log("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, this.getClass()));
 
                                     }
 
-                                    logger.setLog("Revoke user certificates is complite, userID " + CAuserID + " in CA", response, this.getClass());
+                                    response.appendLog(logger.log("Revoke user certificates is complite, userID " + CAuserID + " in CA", this.getClass()));
                                     result.put("CertList", revCertList);
                                 } else {
-                                    logger.setLog("Not found active certificates in CA for user " + Email, response, this.getClass());
+                                    response.appendLog(logger.log("Not found active certificates in CA for user " + Email, this.getClass()));
                                 }
 
                                 /*
@@ -532,7 +535,7 @@ public class ITSKCASoap {
                             //Блокируем пользователя УЦ
                              port.deactivateUser(CAuserID, Boolean.TRUE);
                          }
-                        setLog("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
+                        log("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
                                  */
                                 response.result = "SUCCESS";
                                 response.propertyMap = result;
@@ -540,14 +543,14 @@ public class ITSKCASoap {
 
                             } else {
                                 //Ошибка, найдено больше одного пользователя
-                                logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
+                                response.appendLog(logger.logError("Error: Parsing result found more than one CA user", this.getClass()));
                                 response.propertyMap = result;
                                 return response;
                             }
                         }
                     }
                 } else {
-                    logger.setErrorLog("Error: Not find CA user, filter:" + CAOIDemail + "->" + Email, response, this.getClass());
+                    response.appendLog(logger.logError("Error: Not find CA user, filter:" + CAOIDemail + "->" + Email, this.getClass()));
                     response.propertyMap = result;
                     return response;
                 }
@@ -557,7 +560,7 @@ public class ITSKCASoap {
 
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
+            response.appendLog(logger.logError(ss, this.getClass()));
             //LOGGER.log(Level.SEVERE, "Error initialization revokeUser", e);
             response.propertyMap = result;
             return response;
@@ -567,7 +570,12 @@ public class ITSKCASoap {
         }
     }
 
-    public String signRequestCA(String StrRequest, PrivateKey privateKey, X509Certificate cert) throws Exception {
+    public String signRequestCA(
+            String StrRequest,
+            PrivateKey privateKey,
+            X509Certificate cert,
+            ResponseITSKCASoap response
+    ) throws Exception {
         //Подпись как PKCS7 с использованием CMS
         byte[] data = StrRequest.getBytes("UTF-16LE");
         final PrivateKey[] keys = new PrivateKey[1];
@@ -591,7 +599,7 @@ public class ITSKCASoap {
             return resBase64String;
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
+            response.appendLog(logger.logError(ss, this.getClass()));
             //LOGGER.log(Level.SEVERE, "Error signed request CA:" + StrRequest, e);
             return "";
         }

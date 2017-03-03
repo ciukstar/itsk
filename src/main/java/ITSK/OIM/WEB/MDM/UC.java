@@ -2,6 +2,7 @@ package ITSK.OIM.WEB.MDM;
 
 import ITSK.OIM.WEB.GEN.RegAuthLegacyService;
 import com.sun.net.ssl.internal.ssl.Provider;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.security.Security;
@@ -18,9 +19,11 @@ import sun.net.www.protocol.https.Handler;
 public class UC {
 
     private final AppLogger logger;
+    private final RegAuthLegacyService service;
 
-    public UC(AppLogger logger) {
+    public UC(AppLogger logger, RegAuthLegacyService service) {
         this.logger = logger;
+        this.service = service;
     }
     
     public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port, ResponseITSKCASoap response) throws Exception {
@@ -34,7 +37,7 @@ public class UC {
             result.put("getUserRecordListResult", getUserRecordListResult.value);
         } catch (Exception e) {
             String ss = ITSKCASoap.getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
+            response.appendLog(logger.logError(ss, this.getClass()));
             return result;
         }
         return result;
@@ -54,7 +57,7 @@ public class UC {
         return resultFindUserCA;
     }
 
-    public RegAuthLegacyContract initializeCA(HashMap<String, Object> params, ResponseITSKCASoap response) throws Exception {
+    public RegAuthLegacyContract initializeCA(HashMap<String, Object> params, ResponseITSKCASoap response) {
         RegAuthLegacyContract port = null;
         try {
             //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
@@ -82,11 +85,12 @@ public class UC {
                 URLStreamHandler handler = new Handler();
                 URL newEndpoint = new URL(null, params.get("CASoapServiceWSDLurl").toString(), handler);
                 QName qname = new QName("http://cryptopro.ru/pki/registration/service/2010/03", "RegAuthLegacyService");
-                RegAuthLegacyService service = new RegAuthLegacyService(newEndpoint, qname);
+                
+                service.setUrl(newEndpoint);
+                service.setQn(qname);
                 port = service.getRegAuthLegacyServiceEndpoint();
             } else {
                 //Использование фиксированного wsdl url из кода
-                RegAuthLegacyService service = new RegAuthLegacyService();
                 port = service.getRegAuthLegacyServiceEndpoint();
             }
             //Устанавливаем таймаут соединения
@@ -94,8 +98,8 @@ public class UC {
             //Устанавливаем таймаут запроса
             //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.request.timeout", 30000);
             return port;
-        } catch (Exception e) {
-            logger.setErrorLog(ITSKCASoap.getStackTrace(e), response, this.getClass());
+        } catch (MalformedURLException e) {
+            response.appendLog(logger.logError(ITSKCASoap.getStackTrace(e), this.getClass()));
             return null;
         }
     }

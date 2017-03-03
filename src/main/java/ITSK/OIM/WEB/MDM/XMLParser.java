@@ -55,7 +55,7 @@ public class XMLParser {
             return result;
         } catch (Exception e) {
             String ss = ITSKCASoap.getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
+            response.appendLog(logger.logError(ss, this.getClass()));
             //LOGGER.log(Level.SEVERE, "Error parser result find user CA:", e);
             return result;
             //StringWriter sw = new StringWriter();

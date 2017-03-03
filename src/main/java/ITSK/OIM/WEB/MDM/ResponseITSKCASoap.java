@@ -12,6 +12,10 @@ public class ResponseITSKCASoap {
     String log = "";
     String result = "ERROR";
 
+    public ResponseITSKCASoap() {
+        this.propertyMap = new HashMap();
+    }
+
     public String getLog() {
         return log;
     }

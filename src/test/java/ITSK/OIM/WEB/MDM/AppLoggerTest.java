@@ -18,44 +18,43 @@ import org.mockito.runners.MockitoJUnitRunner;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class AppLoggerTest {
-    
+
     @Before
     public void setUp() {
     }
 
     @InjectMocks
     private AppLogger logger;
-        
-    final String format = "<%s> <%s> <MDM> <LOG> %s%n";
-    
+
+    private final String logFormat = "<%s> <%s> <MDM> <LOG> %s%n";
+    private final String errorFormat = "<%s> <%s> <MDM> <ERROR> %s%n";
+    private final String msg = "The Message";
+    private final String otherMessage = "Some other message";
+    private final ResponseITSKCASoap response = new ResponseITSKCASoap();
+    private final Class loggedClass = ITSKCASoap.class;
+    private final Date time = new Date();
+
+
     @Test
-    public void shouldUppendTheLogMessageToResponseLog() {
-        final String msg = "The Message";
-        final ResponseITSKCASoap response = new ResponseITSKCASoap();
-        final Class loggedClass = ITSKCASoap.class;
-        final Date time = new Date();
-        final String otherMessage = "Some other message";
-        
-        response.setLog(otherMessage);
-        
-        logger.setLog(msg, response, loggedClass, time);
-        
-        final String expected = otherMessage + String.format(format, time.toString(), loggedClass.toString(), msg);
-        
-        assertThat(response.getLog(), is(expected));
+    public void shouldFormatAndUpdateResponseErrorLog() {
+
+        String entry = logger.logError(msg, loggedClass, time);
+
+        String expected = String.format(errorFormat,
+                time.toString(), loggedClass.toString(), logger.getShortStackTrace(msg, 20));
+
+        assertThat(entry, is(expected));
+
     }
-    
+
     @Test
     public void shouldFormatAndUpdateResponseLog() {
-        final String msg = "The Message";
-        final ResponseITSKCASoap response = new ResponseITSKCASoap();
-        final Class loggedClass = ITSKCASoap.class;
-        final Date time = new Date();
+
+        String entry = logger.log(msg, loggedClass, time);
         
-        logger.setLog(msg, response, loggedClass, time);
-        final String expexted = String.format(format, time.toString(), loggedClass.toString(), msg);
-        
-        assertThat(response.getLog(), is(expexted));
+        final String expexted = String.format(logFormat, time.toString(), loggedClass.toString(), msg);
+
+        assertThat(entry, is(expexted));
     }
-    
+
 }
