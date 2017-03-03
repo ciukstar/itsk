@@ -1,4 +1,3 @@
-
 package ITSK.OIM.WEB.MDM;
 
 import java.util.HashMap;
@@ -8,17 +7,36 @@ import java.util.HashMap;
  * @author birillo
  */
 public class ResponseITSKCASoap {
-    
+
     HashMap propertyMap;
     String log = "";
     String result = "ERROR";
- 
-     public HashMap getPropertyMap() {
-          return propertyMap;
-     }
- 
-     public void setPropertyMap(HashMap parametrMap) {
-          this.propertyMap = parametrMap;
-     }
-    
+
+    public String getLog() {
+        return log;
+    }
+
+    public void setLog(String log) {
+        this.log = log;
+    }
+
+    public String getResult() {
+        return result;
+    }
+
+    public void setResult(String result) {
+        this.result = result;
+    }
+
+    public HashMap getPropertyMap() {
+        return propertyMap;
+    }
+
+    public void setPropertyMap(HashMap parametrMap) {
+        this.propertyMap = parametrMap;
+    }
+
+    public boolean isEmpty() {
+        return propertyMap.isEmpty();
+    }
 }

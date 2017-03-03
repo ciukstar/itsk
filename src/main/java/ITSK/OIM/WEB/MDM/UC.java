@@ -54,7 +54,7 @@ public class UC {
         return resultFindUserCA;
     }
 
-    public RegAuthLegacyContract initializeCA(HashMap params, ResponseITSKCASoap response) throws Exception {
+    public RegAuthLegacyContract initializeCA(HashMap<String, Object> params, ResponseITSKCASoap response) throws Exception {
         RegAuthLegacyContract port = null;
         try {
             //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();

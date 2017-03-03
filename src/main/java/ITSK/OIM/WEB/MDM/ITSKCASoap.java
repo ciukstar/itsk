@@ -91,7 +91,7 @@ public class ITSKCASoap {
             if (resultFindUserCA.isEmpty()) {
 
                 logger.setErrorLog("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, response, this.getClass());
-                response.propertyMap = result;
+                response.setPropertyMap(result);
                 return response;
 
             } else if ((int) resultFindUserCA.get("resultCount") > 0) {
