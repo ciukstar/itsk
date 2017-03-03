@@ -21,7 +21,7 @@ public class UC {
             result.put("getUserRecordListResult", getUserRecordListResult.value);
         } catch (Exception e) {
             String ss = ITSKCASoap.getStackTrace(e);
-            itskcaSoap.setErrorLog(ss);
+            itskcaSoap.setErrorLog(ss, itskcaSoap.objResponseITSKCASoap);
             //LOGGER.log(Level.SEVERE, "Error find user CA:", e);
             return result;
             //StringWriter sw = new StringWriter();
