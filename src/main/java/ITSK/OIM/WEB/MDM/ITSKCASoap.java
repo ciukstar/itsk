@@ -80,7 +80,7 @@ public class ITSKCASoap {
             String caOIDCN = "2.5.4.3";
 
             //Инициализировать подключение к УЦ
-            port = InitializationCA(params);
+            port = initializeCA(params);
 
             Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
 
@@ -97,7 +97,7 @@ public class ITSKCASoap {
             HashMap resultCreateTokenForUser = new HashMap();
             String resultgetRegRequestRecord = "";
             String resultSignRequestCABase64 = "";
-            HashMap ResultFindUserCA = new HashMap();
+            HashMap resultFindUserCA = new HashMap();
             String userId = "";
             List<List<String>> resultParseXML = new ArrayList<>();
             List<String> parseAttrs = new ArrayList<>();
@@ -110,22 +110,24 @@ public class ITSKCASoap {
             if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
                 //Поск пользователя УЦ по UserID CA
                 userId = params.get("CAUSERID").toString().trim();
-                ResultFindUserCA = uc.findUserCA(folderID, "UserId", userId, 8, port, response);
+                resultFindUserCA = uc.findUserCA(folderID, "UserId", userId, 8, port, response);
 
             } else {
                 //Поск пользователя УЦ по Email
-                ResultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
+                resultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
             }
 
-            if (ResultFindUserCA.isEmpty()) {
+            if (resultFindUserCA.isEmpty()) {
+
                 logger.setErrorLog("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, response, this.getClass());
                 response.propertyMap = result;
                 return response;
-            } else if ((int) ResultFindUserCA.get("resultCount") > 0) {
+
+            } else if ((int) resultFindUserCA.get("resultCount") > 0) {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                resultParseXML = parser.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
+                resultParseXML = parser.parseXML(resultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
 
                 if (resultParseXML.size() > 0) {
                     users = resultParseXML;
@@ -163,10 +165,10 @@ public class ITSKCASoap {
                   {
                       //Разблокировать пользователя УЦ
                         port.activateUser(CAuserID, Boolean.TRUE);
-                        
+
                         //Создать маркер временного доступа для пользователя
                       resultCreateTokenForUser = objITSKCASoap.createTokenForUser(port,CAuserID,webLogin,webPassword);
-                      if (!resultCreateTokenForUser.isEmpty()) 
+                      if (!resultCreateTokenForUser.isEmpty())
                         {
                            setLog("<" + this.getClass() + "> " + " Create Marker CA for user, User ID: "+ CAuserID + " Complite");
 
@@ -179,7 +181,7 @@ public class ITSKCASoap {
                             result.put("LOGS",LogStr);
                             return result;
                       }
-                      
+
                   }*/ else {
                             logger.setErrorLog("Error: user" + email + "is not active status", response, this.getClass());
                             response.propertyMap = result;
@@ -213,7 +215,7 @@ public class ITSKCASoap {
                             }
 
                         } else {
-                            //Ошибка, найдено больше одного пользователя               
+                            //Ошибка, найдено больше одного пользователя
                             logger.setErrorLog("Error: In CA found more than one active user for email" + email, response, this.getClass());
                             response.propertyMap = result;
                             return response;
@@ -280,7 +282,7 @@ public class ITSKCASoap {
                             }
                         }
                     } else {
-                        //Ошибка, найдено больше одного пользователя               
+                        //Ошибка, найдено больше одного пользователя
                         logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
                         response.propertyMap = result;
                         return response;
@@ -296,7 +298,7 @@ public class ITSKCASoap {
             response.propertyMap = result;
             return response;
             //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));          
+            //e.printStackTrace(new PrintWriter(sw));
 
         }
         response.result = "SUCCESS";
@@ -325,7 +327,7 @@ public class ITSKCASoap {
         }
     }
 
-    public RegAuthLegacyContract InitializationCA(HashMap Params) throws Exception {
+    public RegAuthLegacyContract initializeCA(HashMap Params) throws Exception {
 
         RegAuthLegacyContract port = null;
         try {
@@ -365,7 +367,7 @@ public class ITSKCASoap {
                 port = service.getRegAuthLegacyServiceEndpoint();
 
             } else {
-                //Использование фиксированного wsdl url из кода 
+                //Использование фиксированного wsdl url из кода
                 RegAuthLegacyService service = new RegAuthLegacyService();
                 port = service.getRegAuthLegacyServiceEndpoint();
             }
@@ -428,7 +430,7 @@ public class ITSKCASoap {
             List<List<String>> userList = new ArrayList<>();
 
 //Инициализировать подключение к УЦ
-            port = InitializationCA(Params);
+            port = initializeCA(Params);
 
             //Загрузить KeyStore
             KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
@@ -573,7 +575,7 @@ public class ITSKCASoap {
                             return response;
 
                         } else {
-                            //Ошибка, не найден ни один пользователь               
+                            //Ошибка, не найден ни один пользователь
                             logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
                             response.propertyMap = result;
                             return response;
@@ -626,7 +628,7 @@ public class ITSKCASoap {
 
                                 /*
                          //Парсинг результата поиска пользователя УЦ
-                        
+
                         parseAttrsUsr.clear();
                         parseAttrsUsr.add("Status");
                         resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
@@ -642,7 +644,7 @@ public class ITSKCASoap {
                                 return response;
 
                             } else {
-                                //Ошибка, найдено больше одного пользователя               
+                                //Ошибка, найдено больше одного пользователя
                                 logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
                                 response.propertyMap = result;
                                 return response;
@@ -665,7 +667,7 @@ public class ITSKCASoap {
             response.propertyMap = result;
             return response;
             //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));          
+            //e.printStackTrace(new PrintWriter(sw));
 
         }
     }
@@ -896,7 +898,7 @@ public class ITSKCASoap {
             cms.certificates.elements[i + choices.length]
                     .set_certificate(certificate);
 
-        } // for 
+        } // for
         // Signature.getInstance
         final Signature signature = Signature.getInstance(signAlg, providerName);
         byte[] sign;
@@ -951,6 +953,5 @@ public class ITSKCASoap {
         all.encode(asn1Buf, true);
         return asn1Buf.getMsgCopy();
     }
-
 
 }
