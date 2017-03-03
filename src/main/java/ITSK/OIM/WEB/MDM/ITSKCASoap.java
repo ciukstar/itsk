@@ -156,7 +156,7 @@ public class ITSKCASoap {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
+                resultParseXML = parser.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
 
                 if (resultParseXML.size() > 0) {
                     UserList = resultParseXML;
@@ -283,7 +283,7 @@ public class ITSKCASoap {
                     resultgetRegRequestRecord = port.getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
 
                     //Парсинг результата поиска пользователя УЦ
-                    resultParseXML = parseXML(resultgetRegRequestRecord, parseAttrs, response);
+                    resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs, response);
                     if (resultParseXML.size() == 1) {
                         CAuserID = resultParseXML.get(0).get(0);
                         result.put("UserId", CAuserID);
@@ -484,7 +484,7 @@ public class ITSKCASoap {
                         if (resultCount.value > 0) {
                             logger.setLog("complite find list of certificates CA, userID " + UserID, this.getClass(), this);
                             //Парсинг результата поиска сертификатов пользователя УЦ
-                            resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
+                            resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
 
                             //Сформировать запрос на отзыв сертификатов пользователя
                             for (int i = 0; i < resultParseXML.size(); i++) {
@@ -542,7 +542,7 @@ public class ITSKCASoap {
                     if (ResultFindUserCA.get("resultCount").equals(1)) {
                         logger.setLog("Find user for email" + Email + " in CA", this.getClass(), this);
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
+                        resultParseXML = parser.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
 
                         if (resultParseXML.size() == 1) {
                             CAuserID = resultParseXML.get(0).get(0);
@@ -562,7 +562,7 @@ public class ITSKCASoap {
                                 logger.setLog("Complite find list of certificates, userID " + CAuserID + " in CA", this.getClass(), this);
 
                                 //Парсинг результата поиска сертификатов пользователя УЦ
-                                resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
+                                resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
 
                                 //Сформировать запрос на отзыв сертификатов пользователя
                                 for (int i = 0; i < resultParseXML.size(); i++) {
@@ -616,7 +616,7 @@ public class ITSKCASoap {
                         parseAttrsUsr.add("Status");
 
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
+                        resultParseXML = parser.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
 
                         if (resultParseXML.size() > 0) {
                             for (int i = 0; i < resultParseXML.size(); i++) {
@@ -983,62 +983,5 @@ public class ITSKCASoap {
         return asn1Buf.getMsgCopy();
     }
 
-    public List<List<String>> parseXML(String XMLString, List<String> Element, ResponseITSKCASoap response) throws Exception {
-
-        List<String> resultStr = new ArrayList<>();
-        List<List<String>> result = new ArrayList<>();
-        List<String> listStrElems = new ArrayList<>();
-        InputSource streamXML = new InputSource(new StringReader(XMLString));
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        String strElems = "";
-        try {
-            org.w3c.dom.Document document = builder.parse(streamXML);
-
-            NodeList nodes = document.getElementsByTagName("rs:data");
-
-            org.w3c.dom.Element element1 = (org.w3c.dom.Element) nodes.item(0);
-            NodeList movieList = element1.getElementsByTagName("z:row");
-            org.w3c.dom.Element element2 = null;
-
-            for (int i = 0; i < movieList.getLength(); i++) {
-
-                element2 = (org.w3c.dom.Element) movieList.item(i);
-
-                for (int j = 0; j < Element.size(); j++) {
-                    if (j + 1 != Element.size()) {
-
-                        strElems = strElems + element2.getAttributes().getNamedItem(Element.get(j)).getNodeValue().toString() + "||";
-
-                    } else {
-
-                        strElems = strElems + element2.getAttributes().getNamedItem(Element.get(j)).getNodeValue().toString();
-
-                    }
-                }
-
-                listStrElems.add(strElems);
-                strElems = "";
-
-            }
-
-            for (int i = 0; i < listStrElems.size(); i++) {
-                resultStr = Arrays.asList(listStrElems.get(i).split("\\|\\|"));
-                result.add(i, resultStr);
-
-            }
-
-            return result;
-
-        } catch (Exception e) {
-            String ss = getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
-            //LOGGER.log(Level.SEVERE, "Error parser result find user CA:", e);
-            return result;
-            //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw)); 
-        }
-
-    }
 
 }
