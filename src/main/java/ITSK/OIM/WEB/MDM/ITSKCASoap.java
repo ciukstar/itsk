@@ -87,7 +87,7 @@ public class ITSKCASoap {
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
         //OperationResult result = null;
-        ITSKCASoap objITSKCASoap = new ITSKCASoap();
+        
         HashMap result = new HashMap();
         HashMap OIDlist = new HashMap();
         RegAuthLegacyContract port = null;
@@ -158,7 +158,7 @@ public class ITSKCASoap {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                resultParseXML = objITSKCASoap.ParseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs);
+                resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs);
 
                 if (resultParseXML.size() > 0) {
                     UserList = resultParseXML;
@@ -178,7 +178,7 @@ public class ITSKCASoap {
 
                         if (UserList.get(0).get(1).equals("A")) {
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = objITSKCASoap.CreateTokenForUser(port, CAuserID, webLogin, webPassword);
+                            resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 setLog("Create Marker CA for user, User ID: " + CAuserID + " Complite");
 
@@ -198,7 +198,7 @@ public class ITSKCASoap {
                         port.activateUser(CAuserID, Boolean.TRUE);
                         
                         //Создать маркер временного доступа для пользователя
-                      resultCreateTokenForUser = objITSKCASoap.CreateTokenForUser(port,CAuserID,webLogin,webPassword);
+                      resultCreateTokenForUser = objITSKCASoap.createTokenForUser(port,CAuserID,webLogin,webPassword);
                       if (!resultCreateTokenForUser.isEmpty()) 
                         {
                            setLog("<" + this.getClass() + "> " + " Create Marker CA for user, User ID: "+ CAuserID + " Complite");
@@ -233,7 +233,7 @@ public class ITSKCASoap {
                             setLog("Found one active user CA for user email: " + Email + "User ID:" + CAuserID);
 
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = objITSKCASoap.CreateTokenForUser(port, CAuserID, webLogin, webPassword);
+                            resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 setLog("Create Marker CA for user, User ID: " + CAuserID + " Complite");
                                 objResponseITSKCASoap.result = "SUCCESS";
@@ -272,7 +272,7 @@ public class ITSKCASoap {
                 setLog("Request for create user CA complite, Request: \n" + RegRequest);
 
                 //Подписать запрос
-                resultSignRequestCABase64 = objITSKCASoap.SignRequestCA(RegRequest, cred.getLeft(), cred.getRight());
+                resultSignRequestCABase64 = signRequestCA(RegRequest, cred.getLeft(), cred.getRight());
                 if (!resultSignRequestCABase64.isEmpty()) {
                     setLog("Request is signed");
                     //Выполнить запрос на регистрацию пользователя УЦ
@@ -285,7 +285,7 @@ public class ITSKCASoap {
                     resultgetRegRequestRecord = port.getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
 
                     //Парсинг результата поиска пользователя УЦ
-                    resultParseXML = ParseXML(resultgetRegRequestRecord, parseAttrs);
+                    resultParseXML = parseXML(resultgetRegRequestRecord, parseAttrs);
                     if (resultParseXML.size() == 1) {
                         CAuserID = resultParseXML.get(0).get(0);
                         result.put("UserId", CAuserID);
@@ -298,7 +298,7 @@ public class ITSKCASoap {
                             return objResponseITSKCASoap;
                         } else {
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = objITSKCASoap.CreateTokenForUser(port, CAuserID, webLogin, webPassword);
+                            resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 setLog("Create Token for user: " + CAuserID + " Email: " + Email);
 
@@ -338,7 +338,7 @@ public class ITSKCASoap {
     }
 
 
-    public HashMap CreateTokenForUser(
+    public HashMap createTokenForUser(
             RegAuthLegacyContract port,
             String userID,
             Holder<String> webLogin,
@@ -488,14 +488,14 @@ public class ITSKCASoap {
                         if (resultCount.value > 0) {
                             setLog("complite find list of certificates CA, userID " + UserID);
                             //Парсинг результата поиска сертификатов пользователя УЦ
-                            resultParseXML = objITSKCASoap.ParseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                            resultParseXML = objITSKCASoap.parseXML(getCertificateRecordListResult.value, parseAttrsCert);
 
                             //Сформировать запрос на отзыв сертификатов пользователя
                             for (int i = 0; i < resultParseXML.size(); i++) {
                                 RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                 //Подписать запрос
-                                resultSignRequestCABase64 = objITSKCASoap.SignRequestCA(RevRequest, privateKey, cert);
+                                resultSignRequestCABase64 = objITSKCASoap.signRequestCA(RevRequest, privateKey, cert);
 
                                 //Отзыв сертификатов пользователя
                                 resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
@@ -516,7 +516,7 @@ public class ITSKCASoap {
                         //Парсинг результата поиска пользователя УЦ
                         parseAttrsUsr.clear();
                         parseAttrsUsr.add("Status");
-                        resultParseXML = objITSKCASoap.ParseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
+                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
                         if (resultParseXML.get(0).trim().equals("A"))
                          {
                             //Блокируем пользователя УЦ
@@ -546,7 +546,7 @@ public class ITSKCASoap {
                     if (ResultFindUserCA.get("resultCount").equals(1)) {
                         setLog("Find user for email" + Email + " in CA");
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = objITSKCASoap.ParseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
 
                         if (resultParseXML.size() == 1) {
                             CAuserID = resultParseXML.get(0).get(0);
@@ -566,14 +566,14 @@ public class ITSKCASoap {
                                 setLog("Complite find list of certificates, userID " + CAuserID + " in CA");
 
                                 //Парсинг результата поиска сертификатов пользователя УЦ
-                                resultParseXML = objITSKCASoap.ParseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                                resultParseXML = objITSKCASoap.parseXML(getCertificateRecordListResult.value, parseAttrsCert);
 
                                 //Сформировать запрос на отзыв сертификатов пользователя
                                 for (int i = 0; i < resultParseXML.size(); i++) {
                                     RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                     //Подписать запрос
-                                    resultSignRequestCABase64 = objITSKCASoap.SignRequestCA(RevRequest, privateKey, cert);
+                                    resultSignRequestCABase64 = objITSKCASoap.signRequestCA(RevRequest, privateKey, cert);
 
                                     //Отзыв сертификатов пользователя
                                     resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
@@ -594,7 +594,7 @@ public class ITSKCASoap {
                          //Парсинг результата поиска пользователя УЦ
                         parseAttrsUsr.clear();
                         parseAttrsUsr.add("Status");
-                        resultParseXML = objITSKCASoap.ParseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
+                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
 
                         if (resultParseXML.get(0).trim().equals("A"))
                          {
@@ -620,7 +620,7 @@ public class ITSKCASoap {
                         parseAttrsUsr.add("Status");
 
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = objITSKCASoap.ParseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
 
                         if (resultParseXML.size() > 0) {
                             for (int i = 0; i < resultParseXML.size(); i++) {
@@ -643,7 +643,7 @@ public class ITSKCASoap {
                                         RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                         //Подписать запрос
-                                        resultSignRequestCABase64 = objITSKCASoap.SignRequestCA(RevRequest, privateKey, cert);
+                                        resultSignRequestCABase64 = objITSKCASoap.signRequestCA(RevRequest, privateKey, cert);
 
                                         //Отзыв сертификатов пользователя
                                         resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
@@ -664,7 +664,7 @@ public class ITSKCASoap {
                         
                         parseAttrsUsr.clear();
                         parseAttrsUsr.add("Status");
-                        resultParseXML = objITSKCASoap.ParseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
+                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
                         if (resultParseXML.get(0).trim().equals("A"))
                          {
                             //Блокируем пользователя УЦ
@@ -705,7 +705,7 @@ public class ITSKCASoap {
         }
     }
 
-    public String SignRequestCA(String StrRequest, PrivateKey privateKey, X509Certificate cert) throws Exception {
+    public String signRequestCA(String StrRequest, PrivateKey privateKey, X509Certificate cert) throws Exception {
         //Подпись как PKCS7 с использованием CMS
         byte[] data = StrRequest.getBytes("UTF-16LE");
         final PrivateKey[] keys = new PrivateKey[1];
@@ -1011,7 +1011,7 @@ public class ITSKCASoap {
 
     }
 
-    public List<List<String>> ParseXML(String XMLString, List<String> Element) throws Exception {
+    public List<List<String>> parseXML(String XMLString, List<String> Element) throws Exception {
 
         List<String> resultStr = new ArrayList<String>();
         List<List<String>> result = new ArrayList<>();
