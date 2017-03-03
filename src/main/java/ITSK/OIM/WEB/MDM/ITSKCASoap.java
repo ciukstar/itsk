@@ -78,7 +78,7 @@ public class ITSKCASoap {
        HashMap result = new HashMap();
        HashMap Params = new HashMap();
        ITSKCASoap test = new ITSKCASoap();
-      //result = test.RevokeUser("1","",3,Params);
+      //result = test.revokeUser("1","",3,Params);
       result = test.createUser("1","2","3",Params);
     }*/
     public ResponseITSKCASoap createUser(String Email, String ADLogin, String FIO, HashMap Params) throws Exception {
@@ -417,7 +417,7 @@ public class ITSKCASoap {
         }
     }
 
-    public ResponseITSKCASoap RevokeUser(String Email, String UserID, int RevocationReason, HashMap Params) throws Exception {
+    public ResponseITSKCASoap revokeUser(String Email, String UserID, int RevocationReason, HashMap Params) throws Exception {
 
         HashMap result = new HashMap();
 
@@ -692,7 +692,7 @@ public class ITSKCASoap {
         } catch (Exception e) {
             String ss = getStackTrace(e);
             logger.setErrorLog(ss, response, this.getClass());
-            //LOGGER.log(Level.SEVERE, "Error initialization RevokeUser", e);
+            //LOGGER.log(Level.SEVERE, "Error initialization revokeUser", e);
             response.propertyMap = result;
             return response;
             //StringWriter sw = new StringWriter();
