@@ -63,59 +63,34 @@ public class ITSKCASoap {
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
         //OperationResult result = null;
-        HashMap result = new HashMap();
-        HashMap OIDlist = new HashMap();
-        RegAuthLegacyContract port = null;
+        //String folderID = Params.get("CAFolderID").toString();
+        String folderID = "c5619331-7426-e611-80ed-00505681c485";
+        //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
+        char[] charPwd = new char[]{'Q', 'w', 'e', 'r', 't', 'y', '1', '2', '3'};
+        //String CAOIDemail = Params.get("EMAIL").toString();
+        String CAOIDemail = "1.2.840.113549.1.9.1";
+        //String CAOIDemail = Params.get("UPN").toString();
+        String caOIDUPN = "1.3.6.1.4.1.311.20.2.3";
+        //String CAOIDemail = Params.get("CN").toString();
+        String caOIDCN = "2.5.4.3";
+
+        final HashMap result = new HashMap();
         try {
 
-            //String folderID = Params.get("CAFolderID").toString();
-            String folderID = "c5619331-7426-e611-80ed-00505681c485";
-            //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
-            char[] charPwd = new char[]{'Q', 'w', 'e', 'r', 't', 'y', '1', '2', '3'};
-            //String CAOIDemail = Params.get("EMAIL").toString();
-            String CAOIDemail = "1.2.840.113549.1.9.1";
-            //String CAOIDemail = Params.get("UPN").toString();
-            String caOIDUPN = "1.3.6.1.4.1.311.20.2.3";
-            //String CAOIDemail = Params.get("CN").toString();
-            String caOIDCN = "2.5.4.3";
-
-            //Инициализировать подключение к УЦ
-            port = initializeCA(params);
-
-            Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
-
-            int j = 0;
-            Holder<String> webLogin = new Holder<>();
-            Holder<String> webPassword = new Holder<>();
-            String RegRequest = "";
-            String keyPhrase = "key";
-            String description = "СУИД:Предоставление доступа в УЦ";
-            String managerComment = "СУИД:Предоставление доступа в УЦ";
+            final Holder<String> webLogin = new Holder<>();
+            final Holder<String> webPassword = new Holder<>();
             webLogin.value = "";
             webPassword.value = "";
-            String resultSubmitAndAcceptRegRequest = "";
-            HashMap resultCreateTokenForUser = new HashMap();
-            String resultgetRegRequestRecord = "";
-            String resultSignRequestCABase64 = "";
-            HashMap resultFindUserCA = new HashMap();
-            String userId = "";
-            List<List<String>> resultParseXML = new ArrayList<>();
-            List<String> parseAttrs = new ArrayList<>();
+
+            final List<String> parseAttrs = new ArrayList<>();
             parseAttrs.add("UserId");
-            List<List<String>> users = new ArrayList<>();
 
             logger.setLog("Begin find user " + email + " in CA", response, this.getClass());
 
-            //Поск пользователя УЦ
-            if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
-                //Поск пользователя УЦ по UserID CA
-                userId = params.get("CAUSERID").toString().trim();
-                resultFindUserCA = uc.findUserCA(folderID, "UserId", userId, 8, port, response);
-
-            } else {
-                //Поск пользователя УЦ по Email
-                resultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
-            }
+            //Инициализировать подключение к УЦ
+            final RegAuthLegacyContract port = initializeCA(params);
+            final HashMap<String, Object> resultFindUserCA 
+                    = findUserParams(params, folderID, port, CAOIDemail, email);
 
             if (resultFindUserCA.isEmpty()) {
 
@@ -127,15 +102,15 @@ public class ITSKCASoap {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                resultParseXML = parser.parseXML(resultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
+                final List<List<String>> resultParseXML = parser.parseXML(resultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
 
                 if (resultParseXML.size() > 0) {
-                    users = resultParseXML;
+                    final List<List<String>> users = resultParseXML;
 
                     logger.setLog("Parsing result search user " + email + " complite", response, this.getClass());
 
                     if (users.size() == 1) {
-                        userId = users.get(0).get(0);
+                        final String userId = users.get(0).get(0);
                         result.put("UserId", userId);
                         if (userId.isEmpty()) {
                             logger.setErrorLog("Error: Not parsing result find CA user", response, this.getClass());
@@ -147,7 +122,7 @@ public class ITSKCASoap {
 
                         if (users.get(0).get(1).equals("A")) {
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
+                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 logger.setLog("Create Marker CA for user, User ID: " + userId + " Complite", response, this.getClass());
 
@@ -189,6 +164,8 @@ public class ITSKCASoap {
                         }
 
                     } else {
+                        String userId = "";
+                        int j = 0;
                         for (int i = 0; i < users.size(); i++) {
                             if (users.get(i).get(1).equals("A")) {
                                 j = j + 1;
@@ -202,7 +179,7 @@ public class ITSKCASoap {
                             logger.setLog("Found one active user CA for user email: " + email + "User ID:" + userId, response, this.getClass());
 
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
+                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 logger.setLog("Create Marker CA for user, User ID: " + userId + " Complite", response, this.getClass());
                                 response.result = "SUCCESS";
@@ -229,8 +206,7 @@ public class ITSKCASoap {
                 logger.setLog("User not found, Email: " + email, response, this.getClass());
 
                 //Сформировать запрос на регисрацию пользователя
-                RegRequest
-                        = "<ProfileAttributesChange> \n"
+                final String regRequest = "<ProfileAttributesChange> \n"
                         + "<To> \n"
                         + "<Attribute Oid=\"" + caOIDUPN + "\" Value=\"" + ADLogin + "\" /> \n"
                         + "<Attribute Oid=\"" + CAOIDemail + "\" Value=\"" + email + "\" /> \n"
@@ -238,25 +214,29 @@ public class ITSKCASoap {
                         + "</To> \n"
                         + "</ProfileAttributesChange> \n";
 
-                logger.setLog("Request for create user CA complite, Request: \n" + RegRequest, response, this.getClass());
+                logger.setLog("Request for create user CA complite, Request: \n" + regRequest, response, this.getClass());
 
+                final Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
                 //Подписать запрос
-                resultSignRequestCABase64 = signRequestCA(RegRequest, cred.getLeft(), cred.getRight());
+                final String resultSignRequestCABase64 = signRequestCA(regRequest, cred.getLeft(), cred.getRight());
                 if (!resultSignRequestCABase64.isEmpty()) {
                     logger.setLog("Request is signed", response, this.getClass());
                     //Выполнить запрос на регистрацию пользователя УЦ
-                    resultSubmitAndAcceptRegRequest = port.submitAndAcceptRegRequest(folderID, resultSignRequestCABase64, email, keyPhrase, description, managerComment, Boolean.FALSE);
+                    final String keyPhrase = "key";
+                    final String description = "СУИД:Предоставление доступа в УЦ";
+                    final String managerComment = "СУИД:Предоставление доступа в УЦ";
+                    final String resultSubmitAndAcceptRegRequest = port.submitAndAcceptRegRequest(folderID, resultSignRequestCABase64, email, keyPhrase, description, managerComment, Boolean.FALSE);
 
                     //Сохранить результат submitAndAcceptRegRequest (номер запроса)
                     result.put("RegID", resultSubmitAndAcceptRegRequest);
 
                     //Получить описание запроса на регистрацию + получить UserID
-                    resultgetRegRequestRecord = port.getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
+                    final String resultgetRegRequestRecord = port.getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
 
                     //Парсинг результата поиска пользователя УЦ
-                    resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs, response);
+                    final List<List<String>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs, response);
                     if (resultParseXML.size() == 1) {
-                        userId = resultParseXML.get(0).get(0);
+                        final String userId = resultParseXML.get(0).get(0);
                         result.put("UserId", userId);
 
                         logger.setLog("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + userId, response, this.getClass());
@@ -267,7 +247,7 @@ public class ITSKCASoap {
                             return response;
                         } else {
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
+                            final HashMap resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 logger.setLog("Create Token for user: " + userId + " Email: " + email, response, this.getClass());
 
@@ -304,6 +284,21 @@ public class ITSKCASoap {
         response.result = "SUCCESS";
         response.propertyMap = result;
         return response;
+    }
+
+    HashMap<String, Object> findUserParams(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) throws Exception {
+        HashMap<String, Object> resultFindUserCA;
+        //Поск пользователя УЦ
+        if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
+            //Поск пользователя УЦ по UserID CA
+            final String userId = params.get("CAUSERID").toString().trim();
+            resultFindUserCA = uc.findUserCA(folderID, "UserId", userId, 8, port, response);
+            
+        } else {
+            //Поск пользователя УЦ по Email
+            resultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
+        }
+        return resultFindUserCA;
     }
 
     public HashMap createTokenForUser(
