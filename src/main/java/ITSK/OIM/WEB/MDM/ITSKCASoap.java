@@ -1056,7 +1056,7 @@ public class ITSKCASoap {
         response.log = response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<LOG> " + logString + "\n";
         //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<LOG> " + logString + "\n";  
         System.out.println(response.log);
-        LOGGER.finest(response.log);
+        Logger.getLogger(clazz.getName()).finest(response.log);
     }
 
 }
