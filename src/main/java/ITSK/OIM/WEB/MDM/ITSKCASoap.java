@@ -156,7 +156,7 @@ public class ITSKCASoap {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs);
+                resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
 
                 if (resultParseXML.size() > 0) {
                     UserList = resultParseXML;
@@ -283,7 +283,7 @@ public class ITSKCASoap {
                     resultgetRegRequestRecord = port.getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
 
                     //Парсинг результата поиска пользователя УЦ
-                    resultParseXML = parseXML(resultgetRegRequestRecord, parseAttrs);
+                    resultParseXML = parseXML(resultgetRegRequestRecord, parseAttrs, response);
                     if (resultParseXML.size() == 1) {
                         CAuserID = resultParseXML.get(0).get(0);
                         result.put("UserId", CAuserID);
@@ -484,7 +484,7 @@ public class ITSKCASoap {
                         if (resultCount.value > 0) {
                             logger.setLog("complite find list of certificates CA, userID " + UserID, this.getClass(), this);
                             //Парсинг результата поиска сертификатов пользователя УЦ
-                            resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                            resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
 
                             //Сформировать запрос на отзыв сертификатов пользователя
                             for (int i = 0; i < resultParseXML.size(); i++) {
@@ -542,7 +542,7 @@ public class ITSKCASoap {
                     if (ResultFindUserCA.get("resultCount").equals(1)) {
                         logger.setLog("Find user for email" + Email + " in CA", this.getClass(), this);
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
 
                         if (resultParseXML.size() == 1) {
                             CAuserID = resultParseXML.get(0).get(0);
@@ -562,7 +562,7 @@ public class ITSKCASoap {
                                 logger.setLog("Complite find list of certificates, userID " + CAuserID + " in CA", this.getClass(), this);
 
                                 //Парсинг результата поиска сертификатов пользователя УЦ
-                                resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                                resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
 
                                 //Сформировать запрос на отзыв сертификатов пользователя
                                 for (int i = 0; i < resultParseXML.size(); i++) {
@@ -616,7 +616,7 @@ public class ITSKCASoap {
                         parseAttrsUsr.add("Status");
 
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr, response);
 
                         if (resultParseXML.size() > 0) {
                             for (int i = 0; i < resultParseXML.size(); i++) {
@@ -983,7 +983,7 @@ public class ITSKCASoap {
         return asn1Buf.getMsgCopy();
     }
 
-    public List<List<String>> parseXML(String XMLString, List<String> Element) throws Exception {
+    public List<List<String>> parseXML(String XMLString, List<String> Element, ResponseITSKCASoap response) throws Exception {
 
         List<String> resultStr = new ArrayList<>();
         List<List<String>> result = new ArrayList<>();
