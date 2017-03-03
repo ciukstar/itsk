@@ -132,28 +132,7 @@ public class ITSKCASoap {
                                 return response;
                             }
 
-                        } /*else if (UserList.get(0).get(1).equals("I"))
-                  {
-                      //Разблокировать пользователя УЦ
-                        port.activateUser(CAuserID, Boolean.TRUE);
-
-                        //Создать маркер временного доступа для пользователя
-                      resultCreateTokenForUser = objITSKCASoap.createTokenForUser(port,CAuserID,webLogin,webPassword);
-                      if (!resultCreateTokenForUser.isEmpty())
-                        {
-                           setLog("<" + this.getClass() + "> " + " Create Marker CA for user, User ID: "+ CAuserID + " Complite");
-
-                            result.put("RESULT","SUCCESS");
-                            result.putAll(resultCreateTokenForUser);
-                            result.put("LOGS",LogStr);
-                            return result;
                         } else {
-                            result.put("RESULT","ERROR");
-                            result.put("LOGS",LogStr);
-                            return result;
-                      }
-
-                  }*/ else {
                             logger.setErrorLog("Error: user" + email + "is not active status", response, this.getClass());
                             response.propertyMap = result;
                             return response;
