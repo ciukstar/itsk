@@ -31,5 +31,19 @@ public class UC {
         }
         return result;
     }
+
+    HashMap<String, Object> findUserParams(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email, ResponseITSKCASoap response) throws Exception {
+        HashMap<String, Object> resultFindUserCA;
+        //Поск пользователя УЦ
+        if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
+            //Поск пользователя УЦ по UserID CA
+            final String userId = params.get("CAUSERID").toString().trim();
+            resultFindUserCA = findUserCA(folderID, "UserId", userId, 8, port, response);
+        } else {
+            //Поск пользователя УЦ по Email
+            resultFindUserCA = findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
+        }
+        return resultFindUserCA;
+    }
     
 }

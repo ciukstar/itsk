@@ -90,7 +90,7 @@ public class ITSKCASoap {
             //Инициализировать подключение к УЦ
             final RegAuthLegacyContract port = initializeCA(params);
             final HashMap<String, Object> resultFindUserCA 
-                    = findUserParams(params, folderID, port, CAOIDemail, email);
+                    = uc.findUserParams(params, folderID, port, CAOIDemail, email, response);
 
             if (resultFindUserCA.isEmpty()) {
 
@@ -286,20 +286,6 @@ public class ITSKCASoap {
         return response;
     }
 
-    HashMap<String, Object> findUserParams(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) throws Exception {
-        HashMap<String, Object> resultFindUserCA;
-        //Поск пользователя УЦ
-        if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
-            //Поск пользователя УЦ по UserID CA
-            final String userId = params.get("CAUSERID").toString().trim();
-            resultFindUserCA = uc.findUserCA(folderID, "UserId", userId, 8, port, response);
-            
-        } else {
-            //Поск пользователя УЦ по Email
-            resultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
-        }
-        return resultFindUserCA;
-    }
 
     public HashMap createTokenForUser(
             RegAuthLegacyContract port,
