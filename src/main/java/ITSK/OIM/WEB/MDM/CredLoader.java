@@ -1,0 +1,29 @@
+package ITSK.OIM.WEB.MDM;
+
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import ru.CryptoPro.JCP.JCP;
+
+/**
+ *
+ * @author sergiu
+ */
+public class CredLoader {
+
+    Pair<PrivateKey, X509Certificate> loadCredentials(char[] charPwd) 
+            throws KeyStoreException, UnrecoverableKeyException, IOException, CertificateException, NoSuchAlgorithmException {
+        //Загрузить KeyStore
+        KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
+        keyStore.load(null, null);
+        PrivateKey privateKey = (PrivateKey) keyStore.getKey("CA", charPwd);
+        X509Certificate cert = (X509Certificate) keyStore.getCertificate("CA");
+        return Pair.of(privateKey, cert);
+    }
+    
+}

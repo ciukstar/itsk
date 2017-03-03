@@ -6,17 +6,22 @@ import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
 import com.objsys.asn1j.runtime.Asn1Null;
 import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
 import com.objsys.asn1j.runtime.Asn1OctetString;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.Security;
 import java.security.Signature;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,14 +66,12 @@ public class ITSKCASoap {
     private static final Logger LOGGER = Logger.getLogger(ITSKCASoap.class.getName());
     //private String LogStr = "";
     ResponseITSKCASoap objResponseITSKCASoap = new ResponseITSKCASoap();
-
+    
+    
     //private Provider xmlDSigProvider = null;
     /**
      * @param args the command line arguments //private Provider xmlDSigProvider
-     * = null;
-    /
-     **
-     * @param args the command line arguments
+     * = null; / * @param args the command line arguments
      */
 
     /* public static void main(String[] args) throws Exception {
@@ -79,7 +82,7 @@ public class ITSKCASoap {
       //result = test.RevokeUser("1","",3,Params);
       result = test.createUser("1","2","3",Params);
     }*/
-    public ResponseITSKCASoap createUser(String Email, String ADLogin, String FIO, HashMap Params) throws Exception {
+    public ResponseITSKCASoap createUser(String Email, String ADLogin, String FIO, HashMap Params, CredLoader credLoader) throws Exception {
 
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
@@ -104,12 +107,8 @@ public class ITSKCASoap {
             //Инициализировать подключение к УЦ
             port = InitializationCA(Params);
 
-//Загрузить KeyStore
-            KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
-            keyStore.load(null, null);
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey("CA", charPwd);
-            X509Certificate cert = (X509Certificate) keyStore.getCertificate("CA");
-
+            Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
+            
             //////////////////////////////////
             /*Properties pro = System.getProperties();
         
@@ -273,7 +272,7 @@ public class ITSKCASoap {
                 setLog("Request for create user CA complite, Request: \n" + RegRequest);
 
                 //Подписать запрос
-                resultSignRequestCABase64 = objITSKCASoap.SignRequestCA(RegRequest, privateKey, cert);
+                resultSignRequestCABase64 = objITSKCASoap.SignRequestCA(RegRequest, cred.getLeft(), cred.getRight());
                 if (!resultSignRequestCABase64.isEmpty()) {
                     setLog("Request is signed");
                     //Выполнить запрос на регистрацию пользователя УЦ
@@ -338,7 +337,14 @@ public class ITSKCASoap {
         return objResponseITSKCASoap;
     }
 
-    public HashMap CreateTokenForUser(RegAuthLegacyContract port, String userID, Holder<String> webLogin, Holder<String> webPassword) throws RegAuthLegacyContractCreateTokenForUserErrorInfoFaultMessage {
+
+    public HashMap CreateTokenForUser(
+            RegAuthLegacyContract port,
+            String userID,
+            Holder<String> webLogin,
+            Holder<String> webPassword
+    ) throws RegAuthLegacyContractCreateTokenForUserErrorInfoFaultMessage {
+
         HashMap result = new HashMap();
         try {
             port.createTokenForUser(userID, webLogin, webPassword);
