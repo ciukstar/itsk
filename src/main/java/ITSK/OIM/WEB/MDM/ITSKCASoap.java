@@ -320,14 +320,12 @@ public class ITSKCASoap {
             result.put("webPassword", webPassword.value);
             return result;
         } catch (Exception e) {
-            String ss = getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
-            //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
+            logger.setErrorLog(getStackTrace(e), response, this.getClass());
             return result;
         }
     }
 
-    public RegAuthLegacyContract initializeCA(HashMap Params) throws Exception {
+    public RegAuthLegacyContract initializeCA(HashMap params) throws Exception {
 
         RegAuthLegacyContract port = null;
         try {
@@ -354,13 +352,13 @@ public class ITSKCASoap {
             System.setProperty("UseSunHttpHandler", "true");
             System.setProperty("javax.xml.ws.spi.Provider", "com.sun.xml.internal.ws.spi.ProviderImpl");
 
-            if (Params.get("CASoapServiceWSDLurl") != null) {
+            if (params.get("CASoapServiceWSDLurl") != null) {
                 //Использование wsdl url из параметра IT Resource
                 //URL newEndpoint = new URL("file:/C:/Users/Administrator/Desktop/Certs20160531/RegAuthLegacyService.wsdl");
                 //URL newEndpoint = new URL("https://spb99-t-ca02/RA/RegAuthLegacyService.svc?singleWsdl");
 
                 URLStreamHandler handler = new sun.net.www.protocol.https.Handler();
-                java.net.URL newEndpoint = new URL(null, Params.get("CASoapServiceWSDLurl").toString(), handler);
+                java.net.URL newEndpoint = new URL(null, params.get("CASoapServiceWSDLurl").toString(), handler);
                 QName qname = new QName("http://cryptopro.ru/pki/registration/service/2010/03", "RegAuthLegacyService");
                 RegAuthLegacyService service = new RegAuthLegacyService(newEndpoint, qname);
 
@@ -379,11 +377,7 @@ public class ITSKCASoap {
             return port;
 
         } catch (Exception e) {
-            String ss = getStackTrace(e);
-            logger.setErrorLog(ss, response, this.getClass());
-            //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
-            //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));
+            logger.setErrorLog(getStackTrace(e), response, this.getClass());
             return null;
         }
     }
