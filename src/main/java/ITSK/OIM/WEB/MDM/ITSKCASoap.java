@@ -84,16 +84,9 @@ public class ITSKCASoap {
 
             Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
 
-            //////////////////////////////////
-            /*Properties pro = System.getProperties();
-        
-        for(String i : pro.stringPropertyNames())
-        {
-            System.out.println(i + " => " + pro.getProperty(i));
-        }*/
             int j = 0;
-            Holder<String> webLogin = new Holder<String>();
-            Holder<String> webPassword = new Holder<String>();
+            Holder<String> webLogin = new Holder<>();
+            Holder<String> webPassword = new Holder<>();
             String RegRequest = "";
             String keyPhrase = "key";
             String description = "СУИД:Предоставление доступа в УЦ";
@@ -105,20 +98,19 @@ public class ITSKCASoap {
             String resultgetRegRequestRecord = "";
             String resultSignRequestCABase64 = "";
             HashMap ResultFindUserCA = new HashMap();
-            String CAuserID = "";
-            //Email = "metelkin.AS@gazprom-neft.ru";
+            String userId = "";
             List<List<String>> resultParseXML = new ArrayList<>();
-            List<String> parseAttrs = new ArrayList<String>();
+            List<String> parseAttrs = new ArrayList<>();
             parseAttrs.add("UserId");
-            List<List<String>> UserList = new ArrayList<>();
+            List<List<String>> users = new ArrayList<>();
 
             logger.setLog("Begin find user " + email + " in CA", response, this.getClass());
 
             //Поск пользователя УЦ
             if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
                 //Поск пользователя УЦ по UserID CA
-                CAuserID = params.get("CAUSERID").toString().trim();
-                ResultFindUserCA = uc.findUserCA(folderID, "UserId", CAuserID, 8, port, response);
+                userId = params.get("CAUSERID").toString().trim();
+                ResultFindUserCA = uc.findUserCA(folderID, "UserId", userId, 8, port, response);
 
             } else {
                 //Поск пользователя УЦ по Email
@@ -136,26 +128,26 @@ public class ITSKCASoap {
                 resultParseXML = parser.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrs, response);
 
                 if (resultParseXML.size() > 0) {
-                    UserList = resultParseXML;
+                    users = resultParseXML;
 
                     logger.setLog("Parsing result search user " + email + " complite", response, this.getClass());
 
-                    if (UserList.size() == 1) {
-                        CAuserID = UserList.get(0).get(0);
-                        result.put("UserId", CAuserID);
-                        if (CAuserID.isEmpty()) {
+                    if (users.size() == 1) {
+                        userId = users.get(0).get(0);
+                        result.put("UserId", userId);
+                        if (userId.isEmpty()) {
                             logger.setErrorLog("Error: Not parsing result find CA user", response, this.getClass());
                             response.propertyMap = result;
                             return response;
                         }
 
-                        logger.setLog("User found, User ID: " + CAuserID, response, this.getClass());
+                        logger.setLog("User found, User ID: " + userId, response, this.getClass());
 
-                        if (UserList.get(0).get(1).equals("A")) {
+                        if (users.get(0).get(1).equals("A")) {
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
+                            resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
-                                logger.setLog("Create Marker CA for user, User ID: " + CAuserID + " Complite", response, this.getClass());
+                                logger.setLog("Create Marker CA for user, User ID: " + userId + " Complite", response, this.getClass());
 
                                 response.result = "SUCCESS";
                                 result.putAll(resultCreateTokenForUser);
@@ -195,22 +187,22 @@ public class ITSKCASoap {
                         }
 
                     } else {
-                        for (int i = 0; i < UserList.size(); i++) {
-                            if (UserList.get(i).get(1).equals("A")) {
+                        for (int i = 0; i < users.size(); i++) {
+                            if (users.get(i).get(1).equals("A")) {
                                 j = j + 1;
-                                CAuserID = UserList.get(i).get(0);
-                                result.put("UserId", CAuserID);
+                                userId = users.get(i).get(0);
+                                result.put("UserId", userId);
                             }
 
                         }
                         if (j == 1) {
 
-                            logger.setLog("Found one active user CA for user email: " + email + "User ID:" + CAuserID, response, this.getClass());
+                            logger.setLog("Found one active user CA for user email: " + email + "User ID:" + userId, response, this.getClass());
 
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
+                            resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
-                                logger.setLog("Create Marker CA for user, User ID: " + CAuserID + " Complite", response, this.getClass());
+                                logger.setLog("Create Marker CA for user, User ID: " + userId + " Complite", response, this.getClass());
                                 response.result = "SUCCESS";
                                 result.putAll(resultCreateTokenForUser);
                                 response.propertyMap = result;
@@ -262,20 +254,20 @@ public class ITSKCASoap {
                     //Парсинг результата поиска пользователя УЦ
                     resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs, response);
                     if (resultParseXML.size() == 1) {
-                        CAuserID = resultParseXML.get(0).get(0);
-                        result.put("UserId", CAuserID);
+                        userId = resultParseXML.get(0).get(0);
+                        result.put("UserId", userId);
 
-                        logger.setLog("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + CAuserID, response, this.getClass());
+                        logger.setLog("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + userId, response, this.getClass());
 
-                        if (CAuserID.isEmpty()) {
+                        if (userId.isEmpty()) {
                             logger.setErrorLog("Error in the create new CA user, Not parsing result find userID for RegRequest", response, this.getClass());
                             response.propertyMap = result;
                             return response;
                         } else {
                             //Создать маркер временного доступа для пользователя
-                            resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
+                            resultCreateTokenForUser = createTokenForUser(port, userId, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
-                                logger.setLog("Create Token for user: " + CAuserID + " Email: " + email, response, this.getClass());
+                                logger.setLog("Create Token for user: " + userId + " Email: " + email, response, this.getClass());
 
                                 result.putAll(resultCreateTokenForUser);
                                 response.result = "SUCCESS";
@@ -416,17 +408,17 @@ public class ITSKCASoap {
             int j = 0;
             int FlagFindEmail = 0;
             String revCertList = "";
-            Holder<String> getCertificateRecordListResult = new Holder<String>();
-            Holder<Integer> resultCount = new Holder<Integer>();
-            Holder<Integer> totalRowCount = new Holder<Integer>();
+            Holder<String> getCertificateRecordListResult = new Holder<>();
+            Holder<Integer> resultCount = new Holder<>();
+            Holder<Integer> totalRowCount = new Holder<>();
             String resultSubmitAndAcceptRevReques = "";
             String resultSignRequestCABase64 = "";
             HashMap ResultFindUserCA = new HashMap();
             String CAuserID = "";
             //Email = "Andrianov.IA@gazprom-neft.ru";//"Moskvichev.IA@Gazprom-Neft.RU";
             List<List<String>> resultParseXML = new ArrayList<>();
-            List<String> parseAttrsCert = new ArrayList<String>();
-            List<String> parseAttrsUsr = new ArrayList<String>();
+            List<String> parseAttrsCert = new ArrayList<>();
+            List<String> parseAttrsUsr = new ArrayList<>();
             parseAttrsCert.add("SerialNumber");
             parseAttrsCert.add("Thumbprint");
             parseAttrsUsr.add("UserId");
