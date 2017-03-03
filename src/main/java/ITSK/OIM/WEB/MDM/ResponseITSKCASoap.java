@@ -39,4 +39,9 @@ public class ResponseITSKCASoap {
     public boolean isEmpty() {
         return propertyMap.isEmpty();
     }
+
+    ResponseITSKCASoap appendLog(String msg) {
+        this.log = this.log + msg;
+        return this;
+    }
 }

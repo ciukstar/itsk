@@ -10,7 +10,7 @@ import su.jet.oim.utils.NotificationUtils;
  * @author sergiu
  */
 public class AppLogger {
-
+    
     String getShortStackTrace(String st, int line) {
         String[] split = st.split("\n");
         StringBuilder sb = new StringBuilder();
@@ -37,11 +37,14 @@ public class AppLogger {
         Logger.getLogger(clazz.getName()).log(Level.SEVERE, logString);
     }
 
-    void setLog(String logString, ResponseITSKCASoap response, Class<?> clazz) {
-        response.log = response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<LOG> " + logString + "\n";
-        //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<LOG> " + logString + "\n";
+    void setLog(String msg, ResponseITSKCASoap response, Class<?> clazz, Date time) {
+        final String format = "<%s> <%s> <MDM> <LOG> %s%n";
+        response.appendLog(String.format(format, time.toString(), clazz.toString(), msg));
         System.out.println(response.log);
         Logger.getLogger(clazz.getName()).finest(response.log);
+    }
+    void setLog(String msg, ResponseITSKCASoap response, Class<?> clazz) {
+        setLog(msg, response, clazz, new Date());
     }
 
 }
