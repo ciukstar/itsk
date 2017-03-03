@@ -1,6 +1,5 @@
 package ITSK.OIM.WEB.MDM;
 
-import ITSK.OIM.WEB.GEN.RegAuthLegacyService;
 import com.objsys.asn1j.runtime.Asn1BerDecodeBuffer;
 import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
 import com.objsys.asn1j.runtime.Asn1Null;
@@ -8,18 +7,14 @@ import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
 import com.objsys.asn1j.runtime.Asn1OctetString;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.URL;
-import java.net.URLStreamHandler;
 import java.security.KeyStore;
 import java.security.PrivateKey;
-import java.security.Security;
 import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import javax.xml.namespace.QName;
 import javax.xml.ws.Holder;
 import ru.CryptoPro.JCP.JCP;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CMSVersion;
@@ -88,7 +83,8 @@ public class ITSKCASoap {
             logger.setLog("Begin find user " + email + " in CA", response, this.getClass());
 
             //Инициализировать подключение к УЦ
-            final RegAuthLegacyContract port = initializeCA(params);
+            final RegAuthLegacyContract port = uc.initializeCA(params, response);
+            //Поск пользователя УЦ
             final HashMap<String, Object> resultFindUserCA 
                     = uc.findUserParams(params, folderID, port, CAOIDemail, email, response);
 
@@ -306,62 +302,6 @@ public class ITSKCASoap {
         }
     }
 
-    public RegAuthLegacyContract initializeCA(HashMap params) throws Exception {
-
-        RegAuthLegacyContract port = null;
-        try {
-
-            //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
-            char[] charPwd = new char[]{'Q', 'w', 'e', 'r', 't', 'y', '1', '2', '3'};
-
-// JSSE System Properties
-            Security.addProvider(new ru.CryptoPro.JCP.JCP());
-            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
-
-            System.setProperty("javax.net.ssl.keyStoreType", "HDImageStore");
-            System.setProperty("javax.net.ssl.trustStoreType", "HDImageStore");
-            Security.setProperty("ssl.SocketFactory.provider", "ru.CryptoPro.ssl.SSLSocketFactoryImpl");
-            Security.setProperty("ssl.ServerSocketFactory.provider", "ru.CryptoPro.ssl.SSLServerSocketFactoryImpl");
-            Security.setProperty("ssl.KeyManagerFactory.algorithm", "GostX509");
-            Security.setProperty("ssl.TrustManagerFactory.algorithm", "GostX509");
-            System.setProperty("javax.net.ssl.keyStore", "C:/MDM.jks");
-            System.setProperty("javax.net.ssl.keyStorePassword", "Qwerty123");
-            System.setProperty("javax.net.ssl.trustStore", "C:/MDM.jks");
-            System.setProperty("javax.net.ssl.trustStorePassword", "Qwerty123");
-            System.setProperty("java.protocol.handler.pkgs", "sun.net.www.protocol");
-
-            System.setProperty("UseSunHttpHandler", "true");
-            System.setProperty("javax.xml.ws.spi.Provider", "com.sun.xml.internal.ws.spi.ProviderImpl");
-
-            if (params.get("CASoapServiceWSDLurl") != null) {
-                //Использование wsdl url из параметра IT Resource
-                //URL newEndpoint = new URL("file:/C:/Users/Administrator/Desktop/Certs20160531/RegAuthLegacyService.wsdl");
-                //URL newEndpoint = new URL("https://spb99-t-ca02/RA/RegAuthLegacyService.svc?singleWsdl");
-
-                URLStreamHandler handler = new sun.net.www.protocol.https.Handler();
-                java.net.URL newEndpoint = new URL(null, params.get("CASoapServiceWSDLurl").toString(), handler);
-                QName qname = new QName("http://cryptopro.ru/pki/registration/service/2010/03", "RegAuthLegacyService");
-                RegAuthLegacyService service = new RegAuthLegacyService(newEndpoint, qname);
-
-                port = service.getRegAuthLegacyServiceEndpoint();
-
-            } else {
-                //Использование фиксированного wsdl url из кода
-                RegAuthLegacyService service = new RegAuthLegacyService();
-                port = service.getRegAuthLegacyServiceEndpoint();
-            }
-
-            //Устанавливаем таймаут соединения
-            //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.connect.timeout", 60000);
-            //Устанавливаем таймаут запроса
-            //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.request.timeout", 30000);
-            return port;
-
-        } catch (Exception e) {
-            logger.setErrorLog(getStackTrace(e), response, this.getClass());
-            return null;
-        }
-    }
 
     public ResponseITSKCASoap revokeUser(String Email, String UserID, int RevocationReason, HashMap Params) throws Exception {
 
@@ -404,8 +344,8 @@ public class ITSKCASoap {
             List<List<String>> certList = new ArrayList<>();
             List<List<String>> userList = new ArrayList<>();
 
-//Инициализировать подключение к УЦ
-            port = initializeCA(Params);
+            //Инициализировать подключение к УЦ
+            port = uc.initializeCA(Params, response);
 
             //Загрузить KeyStore
             KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
