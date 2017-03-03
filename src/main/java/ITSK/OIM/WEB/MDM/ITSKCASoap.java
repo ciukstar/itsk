@@ -65,7 +65,7 @@ public class ITSKCASoap {
 
     private static final Logger LOGGER = Logger.getLogger(ITSKCASoap.class.getName());
     //private String LogStr = "";
-    ResponseITSKCASoap objResponseITSKCASoap = new ResponseITSKCASoap();
+    ResponseITSKCASoap response = new ResponseITSKCASoap();
     private final CredLoader credLoader;
     private final UC uc;
     private final AppLogger logger;
@@ -158,9 +158,9 @@ public class ITSKCASoap {
             }
 
             if (ResultFindUserCA.isEmpty()) {
-                setErrorLog("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + Email, objResponseITSKCASoap);
-                objResponseITSKCASoap.propertyMap = result;
-                return objResponseITSKCASoap;
+                logger.setErrorLog("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + Email, response, this.getClass());
+                response.propertyMap = result;
+                return response;
             } else if ((int) ResultFindUserCA.get("resultCount") > 0) {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
@@ -176,9 +176,9 @@ public class ITSKCASoap {
                         CAuserID = UserList.get(0).get(0);
                         result.put("UserId", CAuserID);
                         if (CAuserID.isEmpty()) {
-                            setErrorLog("Error: Not parsing result find CA user", objResponseITSKCASoap);
-                            objResponseITSKCASoap.propertyMap = result;
-                            return objResponseITSKCASoap;
+                            logger.setErrorLog("Error: Not parsing result find CA user", response, this.getClass());
+                            response.propertyMap = result;
+                            return response;
                         }
 
                         setLog("User found, User ID: " + CAuserID);
@@ -189,14 +189,14 @@ public class ITSKCASoap {
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 setLog("Create Marker CA for user, User ID: " + CAuserID + " Complite");
 
-                                objResponseITSKCASoap.result = "SUCCESS";
+                                response.result = "SUCCESS";
                                 result.putAll(resultCreateTokenForUser);
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.propertyMap = result;
+                                return response;
 
                             } else {
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.propertyMap = result;
+                                return response;
                             }
 
                         } /*else if (UserList.get(0).get(1).equals("I"))
@@ -221,9 +221,9 @@ public class ITSKCASoap {
                       }
                       
                   }*/ else {
-                            setErrorLog("Error: user" + Email + "is not active status", objResponseITSKCASoap);
-                            objResponseITSKCASoap.propertyMap = result;
-                            return objResponseITSKCASoap;
+                            logger.setErrorLog("Error: user" + Email + "is not active status", response, this.getClass());
+                            response.propertyMap = result;
+                            return response;
                         }
 
                     } else {
@@ -243,20 +243,20 @@ public class ITSKCASoap {
                             resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
                             if (!resultCreateTokenForUser.isEmpty()) {
                                 setLog("Create Marker CA for user, User ID: " + CAuserID + " Complite");
-                                objResponseITSKCASoap.result = "SUCCESS";
+                                response.result = "SUCCESS";
                                 result.putAll(resultCreateTokenForUser);
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.propertyMap = result;
+                                return response;
                             } else {
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.propertyMap = result;
+                                return response;
                             }
 
                         } else {
                             //Ошибка, найдено больше одного пользователя               
-                            setErrorLog("Error: In CA found more than one active user for email" + Email, objResponseITSKCASoap);
-                            objResponseITSKCASoap.propertyMap = result;
-                            return objResponseITSKCASoap;
+                            logger.setErrorLog("Error: In CA found more than one active user for email" + Email, response, this.getClass());
+                            response.propertyMap = result;
+                            return response;
                         }
 
                     }
@@ -300,9 +300,9 @@ public class ITSKCASoap {
                         setLog("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + CAuserID);
 
                         if (CAuserID.isEmpty()) {
-                            setErrorLog("Error in the create new CA user, Not parsing result find userID for RegRequest", objResponseITSKCASoap);
-                            objResponseITSKCASoap.propertyMap = result;
-                            return objResponseITSKCASoap;
+                            logger.setErrorLog("Error in the create new CA user, Not parsing result find userID for RegRequest", response, this.getClass());
+                            response.propertyMap = result;
+                            return response;
                         } else {
                             //Создать маркер временного доступа для пользователя
                             resultCreateTokenForUser = createTokenForUser(port, CAuserID, webLogin, webPassword);
@@ -310,20 +310,20 @@ public class ITSKCASoap {
                                 setLog("Create Token for user: " + CAuserID + " Email: " + Email);
 
                                 result.putAll(resultCreateTokenForUser);
-                                objResponseITSKCASoap.result = "SUCCESS";
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.result = "SUCCESS";
+                                response.propertyMap = result;
+                                return response;
 
                             } else {
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.propertyMap = result;
+                                return response;
                             }
                         }
                     } else {
                         //Ошибка, найдено больше одного пользователя               
-                        setErrorLog("Error: Parsing result found more than one CA user", objResponseITSKCASoap);
-                        objResponseITSKCASoap.propertyMap = result;
-                        return objResponseITSKCASoap;
+                        logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
+                        response.propertyMap = result;
+                        return response;
                     }
 
                 }
@@ -331,17 +331,17 @@ public class ITSKCASoap {
 
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            setErrorLog(ss, objResponseITSKCASoap);
+            logger.setErrorLog(ss, response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
-            objResponseITSKCASoap.propertyMap = result;
-            return objResponseITSKCASoap;
+            response.propertyMap = result;
+            return response;
             //StringWriter sw = new StringWriter();
             //e.printStackTrace(new PrintWriter(sw));          
 
         }
-        objResponseITSKCASoap.result = "SUCCESS";
-        objResponseITSKCASoap.propertyMap = result;
-        return objResponseITSKCASoap;
+        response.result = "SUCCESS";
+        response.propertyMap = result;
+        return response;
     }
 
     public HashMap createTokenForUser(
@@ -359,7 +359,7 @@ public class ITSKCASoap {
             return result;
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            setErrorLog(ss, objResponseITSKCASoap);
+            logger.setErrorLog(ss, response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
             return result;
         }
@@ -418,7 +418,7 @@ public class ITSKCASoap {
 
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            setErrorLog(ss, objResponseITSKCASoap);
+            logger.setErrorLog(ss, response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
             //StringWriter sw = new StringWriter();
             //e.printStackTrace(new PrintWriter(sw));
@@ -529,9 +529,9 @@ public class ITSKCASoap {
                          }
                         setLog("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
                          */
-                        objResponseITSKCASoap.result = "SUCCESS";
-                        objResponseITSKCASoap.propertyMap = result;
-                        return objResponseITSKCASoap;
+                        response.result = "SUCCESS";
+                        response.propertyMap = result;
+                        return response;
 
                     }
                 }
@@ -542,9 +542,9 @@ public class ITSKCASoap {
             if (FlagFindEmail == 1) {
                 ResultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port, this);
                 if (ResultFindUserCA.isEmpty()) {
-                    setErrorLog("Error in process find CA user, filter:" + CAOIDemail + "->" + Email, objResponseITSKCASoap);
-                    objResponseITSKCASoap.propertyMap = result;
-                    return objResponseITSKCASoap;
+                    logger.setErrorLog("Error in process find CA user, filter:" + CAOIDemail + "->" + Email, response, this.getClass());
+                    response.propertyMap = result;
+                    return response;
 
                 } else if ((int) ResultFindUserCA.get("resultCount") > 0) {
 
@@ -560,9 +560,9 @@ public class ITSKCASoap {
                             setLog("Parsing result search user " + CAuserID + " complite");
 
                             if (CAuserID.isEmpty()) {
-                                setErrorLog("Error: Not parsing result find CA user", objResponseITSKCASoap);
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                logger.setErrorLog("Error: Not parsing result find CA user", response, this.getClass());
+                                response.propertyMap = result;
+                                return response;
                             }
 
                             //Получить список сертификатов пользователя УЦ
@@ -608,15 +608,15 @@ public class ITSKCASoap {
                          }
                         setLog("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
                              */
-                            objResponseITSKCASoap.result = "SUCCESS";
-                            objResponseITSKCASoap.propertyMap = result;
-                            return objResponseITSKCASoap;
+                            response.result = "SUCCESS";
+                            response.propertyMap = result;
+                            return response;
 
                         } else {
                             //Ошибка, не найден ни один пользователь               
-                            setErrorLog("Error: Parsing result found more than one CA user", objResponseITSKCASoap);
-                            objResponseITSKCASoap.propertyMap = result;
-                            return objResponseITSKCASoap;
+                            logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
+                            response.propertyMap = result;
+                            return response;
                         }
                         //Получить список сертификатов пользователя УЦ
 
@@ -677,33 +677,33 @@ public class ITSKCASoap {
                          }
                         setLog("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
                                  */
-                                objResponseITSKCASoap.result = "SUCCESS";
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                response.result = "SUCCESS";
+                                response.propertyMap = result;
+                                return response;
 
                             } else {
                                 //Ошибка, найдено больше одного пользователя               
-                                setErrorLog("Error: Parsing result found more than one CA user", objResponseITSKCASoap);
-                                objResponseITSKCASoap.propertyMap = result;
-                                return objResponseITSKCASoap;
+                                logger.setErrorLog("Error: Parsing result found more than one CA user", response, this.getClass());
+                                response.propertyMap = result;
+                                return response;
                             }
                         }
                     }
                 } else {
-                    setErrorLog("Error: Not find CA user, filter:" + CAOIDemail + "->" + Email, objResponseITSKCASoap);
-                    objResponseITSKCASoap.propertyMap = result;
-                    return objResponseITSKCASoap;
+                    logger.setErrorLog("Error: Not find CA user, filter:" + CAOIDemail + "->" + Email, response, this.getClass());
+                    response.propertyMap = result;
+                    return response;
                 }
             }
 
-            return objResponseITSKCASoap;
+            return response;
 
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            setErrorLog(ss, objResponseITSKCASoap);
+            logger.setErrorLog(ss, response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error initialization RevokeUser", e);
-            objResponseITSKCASoap.propertyMap = result;
-            return objResponseITSKCASoap;
+            response.propertyMap = result;
+            return response;
             //StringWriter sw = new StringWriter();
             //e.printStackTrace(new PrintWriter(sw));          
 
@@ -734,7 +734,7 @@ public class ITSKCASoap {
             return resBase64String;
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            setErrorLog(ss, objResponseITSKCASoap);
+            logger.setErrorLog(ss, response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error signed request CA:" + StrRequest, e);
             return "";
         }
@@ -1041,7 +1041,7 @@ public class ITSKCASoap {
 
         } catch (Exception e) {
             String ss = getStackTrace(e);
-            setErrorLog(ss, objResponseITSKCASoap);
+            logger.setErrorLog(ss, response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error parser result find user CA:", e);
             return result;
             //StringWriter sw = new StringWriter();
@@ -1050,25 +1050,13 @@ public class ITSKCASoap {
 
     }
 
-    void setErrorLog(String logString, ResponseITSKCASoap response) {
-
-        //Utils.setProcessTaskNote(taskId, taskNote);
-        //notifyAdminAboutError(logString);
-        String ss = "";
-        ss = logger.getShortStackTrace(logString, 20);
-        response.log = response.log + "<" + new Date() + "> " + "<" + this.getClass() + "> " + "<MDM> " + "<ERROR> " + ss + "\n";
-        //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<ERROR> " + logString + "\n";
-        System.out.println(logString);
-        notifyAboutAnyExeption(logString);
-        LOGGER.log(Level.SEVERE, logString);
-    }
 
     private void setLog(String logString) {
 
-        objResponseITSKCASoap.log = objResponseITSKCASoap.log + "<" + new Date() + "> " + "<" + this.getClass() + "> " + "<MDM> " + "<LOG> " + logString + "\n";
+        response.log = response.log + "<" + new Date() + "> " + "<" + this.getClass() + "> " + "<MDM> " + "<LOG> " + logString + "\n";
         //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<LOG> " + logString + "\n";  
-        System.out.println(objResponseITSKCASoap.log);
-        LOGGER.finest(objResponseITSKCASoap.log);
+        System.out.println(response.log);
+        LOGGER.finest(response.log);
     }
 
 }

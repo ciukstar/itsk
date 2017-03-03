@@ -1,5 +1,10 @@
 package ITSK.OIM.WEB.MDM;
 
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import su.jet.oim.utils.NotificationUtils;
+
 /**
  *
  * @author sergiu
@@ -18,6 +23,18 @@ public class AppLogger {
             sb.append(st);
         }
         return sb.toString();
+    }
+
+    void setErrorLog(String logString, ResponseITSKCASoap response, Class<?> clazz) {
+        //Utils.setProcessTaskNote(taskId, taskNote);
+        //notifyAdminAboutError(logString);
+        String ss = "";
+        ss = getShortStackTrace(logString, 20);
+        response.log = response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<ERROR> " + ss + "\n";
+        //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<ERROR> " + logString + "\n";
+        System.out.println(logString);
+        NotificationUtils.notifyAboutAnyExeption(logString);
+        Logger.getLogger(clazz.getName()).log(Level.SEVERE, logString);
     }
     
 }

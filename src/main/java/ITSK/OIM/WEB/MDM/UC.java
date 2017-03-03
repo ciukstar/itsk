@@ -9,6 +9,8 @@ import javax.xml.ws.Holder;
  */
 public class UC {
 
+    private AppLogger logger;
+    
     public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port, ITSKCASoap itskcaSoap) throws Exception {
         Holder<String> getUserRecordListResult = new Holder<String>();
         Holder<Integer> resultCount = new Holder<Integer>();
@@ -21,7 +23,7 @@ public class UC {
             result.put("getUserRecordListResult", getUserRecordListResult.value);
         } catch (Exception e) {
             String ss = ITSKCASoap.getStackTrace(e);
-            itskcaSoap.setErrorLog(ss, itskcaSoap.objResponseITSKCASoap);
+            logger.setErrorLog(ss, itskcaSoap.response, this.getClass());
             //LOGGER.log(Level.SEVERE, "Error find user CA:", e);
             return result;
             //StringWriter sw = new StringWriter();
