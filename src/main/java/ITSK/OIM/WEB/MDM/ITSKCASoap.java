@@ -68,10 +68,12 @@ public class ITSKCASoap {
     ResponseITSKCASoap objResponseITSKCASoap = new ResponseITSKCASoap();
     private final CredLoader credLoader;
     private final UC uc;
+    private final AppLogger logger;
 
-    public ITSKCASoap(CredLoader credLoader, UC uc) {
+    public ITSKCASoap(CredLoader credLoader, UC uc, AppLogger logger) {
         this.credLoader = credLoader;
         this.uc = uc;
+        this.logger = logger;
     }
 
     //private Provider xmlDSigProvider = null;
