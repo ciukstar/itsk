@@ -6,6 +6,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import static org.mockito.Mockito.mock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -21,12 +23,19 @@ public class ITSKCASoapTest {
     @Before
     public void setUp() {
     }
+    
+    @Mock
+    private CredLoader credLoader;
+    @Mock
+    private UC uc;
+    
+    @InjectMocks
+    private ITSKCASoap sample;
 
     @Test
     public void testSomeMethod() throws Exception {
-        ITSKCASoap sample = new ITSKCASoap();
         
-        ResponseITSKCASoap respose = sample.createUser("ciukstar@yahoo.com", "ciukstar", "Sergiu Starciuc", new HashMap(), mock(CredLoader.class));
+        ResponseITSKCASoap respose = sample.createUser("ciukstar@yahoo.com", "ciukstar", "Sergiu Starciuc", new HashMap());
     }
     
 }

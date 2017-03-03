@@ -66,8 +66,14 @@ public class ITSKCASoap {
     private static final Logger LOGGER = Logger.getLogger(ITSKCASoap.class.getName());
     //private String LogStr = "";
     ResponseITSKCASoap objResponseITSKCASoap = new ResponseITSKCASoap();
-    
-    
+    private final CredLoader credLoader;
+    private final UC uc;
+
+    public ITSKCASoap(CredLoader credLoader, UC uc) {
+        this.credLoader = credLoader;
+        this.uc = uc;
+    }
+
     //private Provider xmlDSigProvider = null;
     /**
      * @param args the command line arguments //private Provider xmlDSigProvider
@@ -82,12 +88,11 @@ public class ITSKCASoap {
       //result = test.RevokeUser("1","",3,Params);
       result = test.createUser("1","2","3",Params);
     }*/
-    public ResponseITSKCASoap createUser(String Email, String ADLogin, String FIO, HashMap Params, CredLoader credLoader) throws Exception {
+    public ResponseITSKCASoap createUser(String Email, String ADLogin, String FIO, HashMap Params) throws Exception {
 
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
         //OperationResult result = null;
-        
         HashMap result = new HashMap();
         HashMap OIDlist = new HashMap();
         RegAuthLegacyContract port = null;
@@ -108,7 +113,7 @@ public class ITSKCASoap {
             port = InitializationCA(Params);
 
             Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
-            
+
             //////////////////////////////////
             /*Properties pro = System.getProperties();
         
@@ -143,11 +148,11 @@ public class ITSKCASoap {
             if (Params.get("CAUSERID") != null && !Params.get("CAUSERID").toString().trim().isEmpty()) {
                 //Поск пользователя УЦ по UserID CA
                 CAuserID = Params.get("CAUSERID").toString().trim();
-                ResultFindUserCA = findUserCA(folderID, "UserId", CAuserID, 8, port);
+                ResultFindUserCA = uc.findUserCA(folderID, "UserId", CAuserID, 8, port, this);
 
             } else {
                 //Поск пользователя УЦ по Email
-                ResultFindUserCA = findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port);
+                ResultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port, this);
             }
 
             if (ResultFindUserCA.isEmpty()) {
@@ -337,7 +342,6 @@ public class ITSKCASoap {
         return objResponseITSKCASoap;
     }
 
-
     public HashMap createTokenForUser(
             RegAuthLegacyContract port,
             String userID,
@@ -423,7 +427,6 @@ public class ITSKCASoap {
     public ResponseITSKCASoap RevokeUser(String Email, String UserID, int RevocationReason, HashMap Params) throws Exception {
 
         HashMap result = new HashMap();
-        ITSKCASoap objITSKCASoap = new ITSKCASoap();
 
         try {
 
@@ -475,7 +478,7 @@ public class ITSKCASoap {
                 result.put("UserId", UserID);
 
                 //Поск пользователя УЦ
-                ResultFindUserCA = objITSKCASoap.findUserCA(folderID, "UserId", UserID, 8, port);
+                ResultFindUserCA = uc.findUserCA(folderID, "UserId", UserID, 8, port, this);
                 if (ResultFindUserCA.isEmpty()) {
                     FlagFindEmail = 1;
 
@@ -488,14 +491,14 @@ public class ITSKCASoap {
                         if (resultCount.value > 0) {
                             setLog("complite find list of certificates CA, userID " + UserID);
                             //Парсинг результата поиска сертификатов пользователя УЦ
-                            resultParseXML = objITSKCASoap.parseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                            resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert);
 
                             //Сформировать запрос на отзыв сертификатов пользователя
                             for (int i = 0; i < resultParseXML.size(); i++) {
                                 RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                 //Подписать запрос
-                                resultSignRequestCABase64 = objITSKCASoap.signRequestCA(RevRequest, privateKey, cert);
+                                resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert);
 
                                 //Отзыв сертификатов пользователя
                                 resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
@@ -535,7 +538,7 @@ public class ITSKCASoap {
             }
 
             if (FlagFindEmail == 1) {
-                ResultFindUserCA = objITSKCASoap.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port);
+                ResultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port, this);
                 if (ResultFindUserCA.isEmpty()) {
                     setErrorLog("Error in process find CA user, filter:" + CAOIDemail + "->" + Email);
                     objResponseITSKCASoap.propertyMap = result;
@@ -546,7 +549,7 @@ public class ITSKCASoap {
                     if (ResultFindUserCA.get("resultCount").equals(1)) {
                         setLog("Find user for email" + Email + " in CA");
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
 
                         if (resultParseXML.size() == 1) {
                             CAuserID = resultParseXML.get(0).get(0);
@@ -566,14 +569,14 @@ public class ITSKCASoap {
                                 setLog("Complite find list of certificates, userID " + CAuserID + " in CA");
 
                                 //Парсинг результата поиска сертификатов пользователя УЦ
-                                resultParseXML = objITSKCASoap.parseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                                resultParseXML = parseXML(getCertificateRecordListResult.value, parseAttrsCert);
 
                                 //Сформировать запрос на отзыв сертификатов пользователя
                                 for (int i = 0; i < resultParseXML.size(); i++) {
                                     RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                     //Подписать запрос
-                                    resultSignRequestCABase64 = objITSKCASoap.signRequestCA(RevRequest, privateKey, cert);
+                                    resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert);
 
                                     //Отзыв сертификатов пользователя
                                     resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
@@ -620,7 +623,7 @@ public class ITSKCASoap {
                         parseAttrsUsr.add("Status");
 
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(), parseAttrsUsr);
 
                         if (resultParseXML.size() > 0) {
                             for (int i = 0; i < resultParseXML.size(); i++) {
@@ -643,7 +646,7 @@ public class ITSKCASoap {
                                         RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                         //Подписать запрос
-                                        resultSignRequestCABase64 = objITSKCASoap.signRequestCA(RevRequest, privateKey, cert);
+                                        resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert);
 
                                         //Отзыв сертификатов пользователя
                                         resultSubmitAndAcceptRevReques = port.submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
@@ -987,30 +990,6 @@ public class ITSKCASoap {
         return asn1Buf.getMsgCopy();
     }
 
-    public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) throws Exception {
-
-        Holder<String> getUserRecordListResult = new Holder<String>();
-        Holder<Integer> resultCount = new Holder<Integer>();
-        Holder<Integer> totalRowCount = new Holder<Integer>();
-        //List<String> result =  new ArrayList<String>();
-        HashMap result = new HashMap();
-
-        try {
-            port.getUserRecordList(folderID, "", "", Boolean.TRUE, condFild, condValue, condOperator, 1, 100, Boolean.TRUE, getUserRecordListResult, resultCount, totalRowCount);
-            result.put("resultCount", resultCount.value);
-            result.put("getUserRecordListResult", getUserRecordListResult.value);
-        } catch (Exception e) {
-            String ss = getStackTrace(e);
-            setErrorLog(ss);
-            //LOGGER.log(Level.SEVERE, "Error find user CA:", e);
-            return result;
-            //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));                      
-        }
-        return result;
-
-    }
-
     public List<List<String>> parseXML(String XMLString, List<String> Element) throws Exception {
 
         List<String> resultStr = new ArrayList<String>();
@@ -1069,7 +1048,7 @@ public class ITSKCASoap {
 
     }
 
-    private void setErrorLog(String logString) {
+    void setErrorLog(String logString) {
 
         //Utils.setProcessTaskNote(taskId, taskNote);
         //notifyAdminAboutError(logString);
