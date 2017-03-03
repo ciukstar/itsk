@@ -36,5 +36,12 @@ public class AppLogger {
         NotificationUtils.notifyAboutAnyExeption(logString);
         Logger.getLogger(clazz.getName()).log(Level.SEVERE, logString);
     }
-    
+
+    void setLog(String logString, Class<?> clazz, ITSKCASoap itskcaSoap) {
+        itskcaSoap.response.log = itskcaSoap.response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<LOG> " + logString + "\n";
+        //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<LOG> " + logString + "\n";
+        System.out.println(itskcaSoap.response.log);
+        Logger.getLogger(clazz.getName()).finest(itskcaSoap.response.log);
+    }
+
 }
