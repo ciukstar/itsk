@@ -77,9 +77,9 @@ public class ITSKCASoap {
        HashMap Params = new HashMap();
        ITSKCASoap test = new ITSKCASoap();
       //result = test.RevokeUser("1","",3,Params);
-      result = test.CreateUser("1","2","3",Params);
+      result = test.createUser("1","2","3",Params);
     }*/
-    public ResponseITSKCASoap CreateUser(String Email, String ADLogin, String FIO, HashMap Params) throws Exception {
+    public ResponseITSKCASoap createUser(String Email, String ADLogin, String FIO, HashMap Params) throws Exception {
 
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
