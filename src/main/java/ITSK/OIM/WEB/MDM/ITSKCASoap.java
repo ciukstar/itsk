@@ -58,11 +58,13 @@ public class ITSKCASoap {
     private final CredLoader credLoader;
     private final UC uc;
     private final AppLogger logger;
+    private final XMLParser parser;
 
-    public ITSKCASoap(CredLoader credLoader, UC uc, AppLogger logger) {
+    public ITSKCASoap(CredLoader credLoader, UC uc, AppLogger logger, XMLParser parser) {
         this.credLoader = credLoader;
         this.uc = uc;
         this.logger = logger;
+        this.parser = parser;
     }
 
     //private Provider xmlDSigProvider = null;
