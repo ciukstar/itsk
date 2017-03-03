@@ -1055,7 +1055,7 @@ public class ITSKCASoap {
         //Utils.setProcessTaskNote(taskId, taskNote);
         //notifyAdminAboutError(logString);
         String ss = "";
-        ss = getShortStackTrace(logString, 20);
+        ss = logger.getShortStackTrace(logString, 20);
         response.log = response.log + "<" + new Date() + "> " + "<" + this.getClass() + "> " + "<MDM> " + "<ERROR> " + ss + "\n";
         //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<ERROR> " + logString + "\n";
         System.out.println(logString);
@@ -1071,18 +1071,4 @@ public class ITSKCASoap {
         LOGGER.finest(objResponseITSKCASoap.log);
     }
 
-    String getShortStackTrace(String st, int line) {
-        String[] split = st.split("\n");
-        StringBuilder sb = new StringBuilder();
-        if (split.length > line) {
-
-            for (int i = 0; i < line; i++) {
-                sb.append(split[i].trim());
-                sb.append("\n");
-            }
-        } else {
-            sb.append(st);
-        }
-        return sb.toString();
-    }
 }
