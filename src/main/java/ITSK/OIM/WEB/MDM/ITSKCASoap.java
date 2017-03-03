@@ -86,7 +86,7 @@ public class ITSKCASoap {
             final RegAuthLegacyContract port = uc.initializeCA(params, response);
             //Поск пользователя УЦ
             final HashMap<String, Object> resultFindUserCA 
-                    = uc.findUserParams(params, folderID, port, CAOIDemail, email, response);
+                    = uc.findUcUser(params, folderID, port, CAOIDemail, email, response);
 
             if (resultFindUserCA.isEmpty()) {
 
