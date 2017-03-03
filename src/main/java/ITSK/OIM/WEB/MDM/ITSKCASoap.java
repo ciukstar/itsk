@@ -983,9 +983,9 @@ public class ITSKCASoap {
 
     public List<List<String>> parseXML(String XMLString, List<String> Element) throws Exception {
 
-        List<String> resultStr = new ArrayList<String>();
+        List<String> resultStr = new ArrayList<>();
         List<List<String>> result = new ArrayList<>();
-        List<String> listStrElems = new ArrayList<String>();
+        List<String> listStrElems = new ArrayList<>();
         InputSource streamXML = new InputSource(new StringReader(XMLString));
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
