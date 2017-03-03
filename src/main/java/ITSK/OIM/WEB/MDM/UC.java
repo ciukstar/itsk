@@ -9,13 +9,16 @@ import javax.xml.ws.Holder;
  */
 public class UC {
 
-    private AppLogger logger;
+    private final AppLogger logger;
+
+    public UC(AppLogger logger) {
+        this.logger = logger;
+    }
     
-    public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port, ITSKCASoap itskcaSoap) throws Exception {
-        Holder<String> getUserRecordListResult = new Holder<String>();
-        Holder<Integer> resultCount = new Holder<Integer>();
-        Holder<Integer> totalRowCount = new Holder<Integer>();
-        //List<String> result =  new ArrayList<String>();
+    public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port, ResponseITSKCASoap response) throws Exception {
+        Holder<String> getUserRecordListResult = new Holder<>();
+        Holder<Integer> resultCount = new Holder<>();
+        Holder<Integer> totalRowCount = new Holder<>();
         HashMap result = new HashMap();
         try {
             port.getUserRecordList(folderID, "", "", Boolean.TRUE, condFild, condValue, condOperator, 1, 100, Boolean.TRUE, getUserRecordListResult, resultCount, totalRowCount);
@@ -23,11 +26,8 @@ public class UC {
             result.put("getUserRecordListResult", getUserRecordListResult.value);
         } catch (Exception e) {
             String ss = ITSKCASoap.getStackTrace(e);
-            logger.setErrorLog(ss, itskcaSoap.response, this.getClass());
-            //LOGGER.log(Level.SEVERE, "Error find user CA:", e);
+            logger.setErrorLog(ss, response, this.getClass());
             return result;
-            //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));
         }
         return result;
     }

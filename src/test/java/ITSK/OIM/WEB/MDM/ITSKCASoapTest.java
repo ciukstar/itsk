@@ -28,6 +28,10 @@ public class ITSKCASoapTest {
     private CredLoader credLoader;
     @Mock
     private UC uc;
+    @Mock
+    private AppLogger logger;
+    @Mock
+    private XMLParser parser;
     
     @InjectMocks
     private ITSKCASoap sample;
@@ -36,6 +40,8 @@ public class ITSKCASoapTest {
     public void testSomeMethod() throws Exception {
         
         ResponseITSKCASoap respose = sample.createUser("ciukstar@yahoo.com", "ciukstar", "Sergiu Starciuc", new HashMap());
+        
+        
     }
     
 }

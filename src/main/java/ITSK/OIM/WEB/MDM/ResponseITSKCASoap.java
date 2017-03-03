@@ -9,7 +9,6 @@ import java.util.HashMap;
  */
 public class ResponseITSKCASoap {
     
-    
     HashMap propertyMap;
     String log = "";
     String result = "ERROR";
@@ -18,8 +17,7 @@ public class ResponseITSKCASoap {
           return propertyMap;
      }
  
-     public void setPropertyMap(
-               HashMap parametrMap) {
+     public void setPropertyMap(HashMap parametrMap) {
           this.propertyMap = parametrMap;
      }
     

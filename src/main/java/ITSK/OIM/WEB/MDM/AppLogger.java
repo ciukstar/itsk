@@ -37,11 +37,11 @@ public class AppLogger {
         Logger.getLogger(clazz.getName()).log(Level.SEVERE, logString);
     }
 
-    void setLog(String logString, Class<?> clazz, ITSKCASoap itskcaSoap) {
-        itskcaSoap.response.log = itskcaSoap.response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<LOG> " + logString + "\n";
+    void setLog(String logString, ResponseITSKCASoap response, Class<?> clazz) {
+        response.log = response.log + "<" + new Date() + "> " + "<" + clazz + "> " + "<MDM> " + "<LOG> " + logString + "\n";
         //LogStr = LogStr + "<" + new Date() + "> " + "<MDM> " + "<LOG> " + logString + "\n";
-        System.out.println(itskcaSoap.response.log);
-        Logger.getLogger(clazz.getName()).finest(itskcaSoap.response.log);
+        System.out.println(response.log);
+        Logger.getLogger(clazz.getName()).finest(response.log);
     }
 
 }
