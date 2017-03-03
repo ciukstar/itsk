@@ -52,7 +52,6 @@ import ru.CryptoPro.JCP.params.OID;
  */
 public class ITSKCASoap {
 
-    private static final Logger LOGGER = Logger.getLogger(ITSKCASoap.class.getName());
     //private String LogStr = "";
     ResponseITSKCASoap response = new ResponseITSKCASoap();
     private final CredLoader credLoader;
