@@ -143,11 +143,11 @@ public class ITSKCASoap {
             if (Params.get("CAUSERID") != null && !Params.get("CAUSERID").toString().trim().isEmpty()) {
                 //Поск пользователя УЦ по UserID CA
                 CAuserID = Params.get("CAUSERID").toString().trim();
-                ResultFindUserCA = FindUserCA(folderID, "UserId", CAuserID, 8, port);
+                ResultFindUserCA = findUserCA(folderID, "UserId", CAuserID, 8, port);
 
             } else {
                 //Поск пользователя УЦ по Email
-                ResultFindUserCA = FindUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port);
+                ResultFindUserCA = findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port);
             }
 
             if (ResultFindUserCA.isEmpty()) {
@@ -475,7 +475,7 @@ public class ITSKCASoap {
                 result.put("UserId", UserID);
 
                 //Поск пользователя УЦ
-                ResultFindUserCA = objITSKCASoap.FindUserCA(folderID, "UserId", UserID, 8, port);
+                ResultFindUserCA = objITSKCASoap.findUserCA(folderID, "UserId", UserID, 8, port);
                 if (ResultFindUserCA.isEmpty()) {
                     FlagFindEmail = 1;
 
@@ -535,7 +535,7 @@ public class ITSKCASoap {
             }
 
             if (FlagFindEmail == 1) {
-                ResultFindUserCA = objITSKCASoap.FindUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port);
+                ResultFindUserCA = objITSKCASoap.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port);
                 if (ResultFindUserCA.isEmpty()) {
                     setErrorLog("Error in process find CA user, filter:" + CAOIDemail + "->" + Email);
                     objResponseITSKCASoap.propertyMap = result;
@@ -987,7 +987,7 @@ public class ITSKCASoap {
         return asn1Buf.getMsgCopy();
     }
 
-    public HashMap FindUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) throws Exception {
+    public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) throws Exception {
 
         Holder<String> getUserRecordListResult = new Holder<String>();
         Holder<Integer> resultCount = new Holder<Integer>();
