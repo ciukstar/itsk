@@ -166,15 +166,15 @@ public class ITSKCASoap {
                     return response;
                 }
 
-                
                 result.put("UserId", userId.get());
                 response.appendLog(logFormatter.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
                 //Создать маркер временного доступа для пользователя
                 final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId.get(), webLogin, webPassword, response);
-                
+
                 if (resultParseXML.getRight().size() > 1
                         && userId.isPresent()
                         && resultCreateTokenForUser.isEmpty()) {
+
                     response.setPropertyMap(result);
                     return response;
                 }
@@ -182,19 +182,21 @@ public class ITSKCASoap {
                 if (resultParseXML.getRight().size() > 1
                         && userId.isPresent()
                         && !resultCreateTokenForUser.isEmpty()) {
+
                     response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId.get() + " Complite", this.getClass()));
                     response.setOutcome("SUCCESS");
                     result.putAll(resultCreateTokenForUser);
                     response.setPropertyMap(result);
                     return response;
                 }
-                
 
-            } else {
+            }
+
+            if ((int) resultFindUserCA.getRight().get("resultCount") <= 0) {
                 response.appendLog(logFormatter.log("User not found, Email: " + email, this.getClass()));
 
                 //Сформировать запрос на регисрацию пользователя
-                final String regRequest = "<ProfileAttributesChange> \n"
+                final String request = "<ProfileAttributesChange> \n"
                         + "<To> \n"
                         + "<Attribute Oid=\"" + caOIDUPN + "\" Value=\"" + ADLogin + "\" /> \n"
                         + "<Attribute Oid=\"" + CAOIDemail + "\" Value=\"" + email + "\" /> \n"
@@ -202,12 +204,14 @@ public class ITSKCASoap {
                         + "</To> \n"
                         + "</ProfileAttributesChange> \n";
 
-                response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + regRequest, this.getClass()));
+                response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + request, this.getClass()));
 
                 final Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
                 //Подписать запрос
-                final String resultSignRequestCABase64 = signRequestCA(regRequest, cred.getLeft(), cred.getRight(), response);
+                final String resultSignRequestCABase64 = signRequestCA(request, cred.getLeft(), cred.getRight(), response);
+
                 if (!resultSignRequestCABase64.isEmpty()) {
+
                     response.appendLog(logFormatter.log("Request is signed", this.getClass()));
                     //Выполнить запрос на регистрацию пользователя УЦ
                     final String keyPhrase = "key";
@@ -237,31 +241,37 @@ public class ITSKCASoap {
                     }
 
                     if (resultParseXML.getRight().size() == 1) {
-                        final String userId = resultParseXML.getRight().get(0).get(0);
-                        result.put("UserId", userId);
 
-                        response.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + userId, this.getClass()));
+                        response.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + resultParseXML.getRight().get(0).get(0), this.getClass()));
 
-                        if (userId.isEmpty()) {
+                        if (resultParseXML.getRight().get(0).get(0).isEmpty()) {
                             response.appendLog(logFormatter.logError("Error in the create new CA user, Not parsing result find userID for RegRequest", this.getClass()));
+                            result.put("UserId", resultParseXML.getRight().get(0).get(0));
                             response.setPropertyMap(result);
                             return response;
-                        } else {
-                            //Создать маркер временного доступа для пользователя
-                            final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
-                            if (!resultCreateTokenForUser.isEmpty()) {
-                                response.appendLog(logFormatter.log("Create Token for user: " + userId + " Email: " + email, this.getClass()));
-
-                                result.putAll(resultCreateTokenForUser);
-                                response.setResult("SUCCESS");
-                                response.setPropertyMap(result);
-                                return response;
-
-                            } else {
-                                response.propertyMap = result;
-                                return response;
-                            }
                         }
+
+                        //Создать маркер временного доступа для пользователя
+                        final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), resultParseXML.getRight().get(0).get(0), webLogin, webPassword, response);
+
+                        if (!resultParseXML.getRight().get(0).get(0).isEmpty()
+                                && resultCreateTokenForUser.isEmpty()) {
+                            response.propertyMap = result;
+                            return response;
+                        }
+
+                        if (!resultParseXML.getRight().get(0).get(0).isEmpty()
+                                && !resultCreateTokenForUser.isEmpty()) {
+                            response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + email, this.getClass()));
+
+                            result.putAll(resultCreateTokenForUser);
+                            result.put("UserId", resultParseXML.getRight().get(0).get(0));
+                            response.setResult("SUCCESS");
+                            response.setPropertyMap(result);
+                            return response;
+
+                        }
+
                     }
 
                 }
