@@ -105,7 +105,8 @@ public class ITSKCASoap {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrs);
+                final Pair<? extends Throwable, List<List<String>>> resultParseXML
+                        = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrs);
 
                 if (resultParseXML.isEmpty()) {
                     response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));

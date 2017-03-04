@@ -5,8 +5,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -23,13 +21,7 @@ import org.xml.sax.SAXException;
  */
 public class XMLParser {
 
-    private final LogFormater logger;
-
-    public XMLParser(LogFormater logger) {
-        this.logger = logger;
-    }
-
-    public Pair<? extends Throwable, List<List<String>>> parseXML(String XMLString, List<String> Element) {
+    public Pair<? extends Throwable, List<List<String>>> parseXML(String XMLString, List<String> elems) {
         try {
             List<String> resultStr = new ArrayList<>();
             List<List<String>> result = new ArrayList<>();
@@ -45,11 +37,11 @@ public class XMLParser {
             Element element2 = null;
             for (int i = 0; i < movieList.getLength(); i++) {
                 element2 = (Element) movieList.item(i);
-                for (int j = 0; j < Element.size(); j++) {
-                    if (j + 1 != Element.size()) {
-                        strElems = strElems + element2.getAttributes().getNamedItem(Element.get(j)).getNodeValue().toString() + "||";
+                for (int j = 0; j < elems.size(); j++) {
+                    if (j + 1 != elems.size()) {
+                        strElems = strElems + element2.getAttributes().getNamedItem(elems.get(j)).getNodeValue().toString() + "||";
                     } else {
-                        strElems = strElems + element2.getAttributes().getNamedItem(Element.get(j)).getNodeValue().toString();
+                        strElems = strElems + element2.getAttributes().getNamedItem(elems.get(j)).getNodeValue().toString();
                     }
                 }
                 listStrElems.add(strElems);
