@@ -53,7 +53,7 @@ public class ITSKCASoap {
         this.parser = parser;
     }
 
-    public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap params) throws Exception {
+    public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap params) {
         ResponseITSKCASoap response = new ResponseITSKCASoap();
 
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
@@ -70,221 +70,227 @@ public class ITSKCASoap {
         //String CAOIDemail = Params.get("CN").toString();
         String caOIDCN = "2.5.4.3";
 
-        try {
+        final Holder<String> webLogin = new Holder<>();
+        final Holder<String> webPassword = new Holder<>();
+        webLogin.value = "";
+        webPassword.value = "";
 
-            final Holder<String> webLogin = new Holder<>();
-            final Holder<String> webPassword = new Holder<>();
-            webLogin.value = "";
-            webPassword.value = "";
+        response.appendLog(
+                logFormatter.log("Begin find user " + email + " in CA", this.getClass())
+        );
 
-            response.appendLog(
-                    logFormatter.log("Begin find user " + email + " in CA", this.getClass())
+        //Инициализировать подключение к УЦ
+        Pair<? extends Throwable, RegAuthLegacyContract> port = uc.initializeCA(params);
+        if (port.isEmpty()) {
+            response.appendLog(logFormatter.logError(getStackTrace(port.getLeft()), this.getClass()));
+        }
+        //Поск пользователя УЦ
+        final Pair<? extends Throwable, HashMap<String, Object>> resultFindUserCA
+                = uc.findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
+
+        if (resultFindUserCA.isEmpty()) {
+            response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
+            response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, this.getClass()));
+            response.setPropertyMap(emptyResult());
+            return response;
+
+        }
+
+        if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
+            //Дополнитьльно для парсинга добавляем статус пользователя
+            //Парсинг результата поиска пользователя УЦ
+            final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
+                    resultFindUserCA.getRight().get("getUserRecordListResult").toString(),
+                    Arrays.asList("UserId", "Status")
             );
 
-            //Инициализировать подключение к УЦ
-            Pair<? extends Throwable, RegAuthLegacyContract> port = uc.initializeCA(params);
-            if (port.isEmpty()) {
-                response.appendLog(logFormatter.logError(getStackTrace(port.getLeft()), this.getClass()));
+            if (resultParseXML.isEmpty()) {
+                response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+            } else {
+                response.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
             }
-            //Поск пользователя УЦ
-            final Pair<? extends Throwable, HashMap<String, Object>> resultFindUserCA
-                    = uc.findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
 
-            if (resultFindUserCA.isEmpty()) {
-                response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
-                response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, this.getClass()));
-                response.setPropertyMap(emptyResult());
+            if (resultParseXML.getRight().size() == 1
+                    && resultParseXML.getRight().get(0).get(0).isEmpty()) {
+
+                response.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
+                response.addEntry("UserId", "");
+                return response;
+            }
+
+            if (resultParseXML.getRight().size() == 1
+                    && !resultParseXML.getRight().get(0).get(1).equals("A")) {
+
+                response.appendLog(logFormatter.logError("Error: user" + email + "is not active status", this.getClass()));
+                return response;
+            }
+
+            final String usrid = resultParseXML.getRight().get(0).get(0);
+            response.appendLog(logFormatter.log("User found, User ID: " + usrid, this.getClass()));
+
+            //Создать маркер временного доступа для пользователя
+            final Pair<? extends Throwable, HashMap> userToken = createTokenForUser(port.getRight(), usrid, webLogin, webPassword, response);
+            if (userToken.isEmpty()) {
+                response.appendLog(logFormatter.logError(getStackTrace(userToken.getLeft()), this.getClass()));
+            }
+
+            if (resultParseXML.getRight().size() == 1
+                    && resultParseXML.getRight().get(0).get(1).equals("A")
+                    && userToken.isEmpty()) {
+
+                response.addEntry("UserId", usrid);
+                return response;
+            }
+
+            if (resultParseXML.getRight().size() == 1
+                    && resultParseXML.getRight().get(0).get(1).equals("A")
+                    && !userToken.isEmpty()) {
+
+                response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + usrid + " Complite", this.getClass()));
+
+                response.setOutcome("SUCCESS");
+                response.addEntries(userToken.getRight());
                 return response;
 
             }
 
-            if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
-                //Дополнитьльно для парсинга добавляем статус пользователя
-                //Парсинг результата поиска пользователя УЦ
-                final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
-                        resultFindUserCA.getRight().get("getUserRecordListResult").toString(),
-                        Arrays.asList("UserId", "Status")
-                );
+            Option<String> userId = findFirstActiveUser(resultParseXML);
 
-                if (resultParseXML.isEmpty()) {
-                    response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
-                } else {
-                    response.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
-                }
-
-                if (resultParseXML.getRight().size() == 1
-                        && resultParseXML.getRight().get(0).get(0).isEmpty()) {
-
-                    response.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
-                    response.addEntry("UserId", "");
-                    return response;
-                }
-
-                if (resultParseXML.getRight().size() == 1
-                        && !resultParseXML.getRight().get(0).get(1).equals("A")) {
-
-                    response.appendLog(logFormatter.logError("Error: user" + email + "is not active status", this.getClass()));
-                    return response;
-                }
-
-                final String usrid = resultParseXML.getRight().get(0).get(0);
-                response.appendLog(logFormatter.log("User found, User ID: " + usrid, this.getClass()));
-
-                //Создать маркер временного доступа для пользователя
-                final HashMap userToken = createTokenForUser(port.getRight(), usrid, webLogin, webPassword, response);
-
-                if (resultParseXML.getRight().size() == 1
-                        && resultParseXML.getRight().get(0).get(1).equals("A")
-                        && userToken.isEmpty()) {
-
-                    response.addEntry("UserId", usrid);
-                    return response;
-                }
-
-                if (resultParseXML.getRight().size() == 1
-                        && resultParseXML.getRight().get(0).get(1).equals("A")
-                        && !userToken.isEmpty()) {
-
-                    response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + usrid + " Complite", this.getClass()));
-
-                    response.setOutcome("SUCCESS");
-                    response.addEntries(userToken);
-                    return response;
-
-                }
-
-                Option<String> userId = findFirstActiveUser(resultParseXML);
-
-                if (resultParseXML.getRight().size() > 1
-                        && userId.isEmpty()) {
-                    //Ошибка, найдено больше одного пользователя
-                    response.appendLog(logFormatter.logError("Error: In CA found more than one active user for email" + email, this.getClass()));
-                    return response;
-                }
-
-                response.appendLog(logFormatter.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
-                //Создать маркер временного доступа для пользователя
-                final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId.get(), webLogin, webPassword, response);
-
-                if (resultParseXML.getRight().size() > 1
-                        && userId.isPresent()
-                        && resultCreateTokenForUser.isEmpty()) {
-
-                    response.addEntry("UserId", userId.get());
-                    return response;
-                }
-
-                if (resultParseXML.getRight().size() > 1
-                        && userId.isPresent()
-                        && !resultCreateTokenForUser.isEmpty()) {
-
-                    response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId.get() + " Complite", this.getClass()));
-                    response.setOutcome("SUCCESS");
-                    response.addEntries(resultCreateTokenForUser);
-                    return response;
-                }
-
+            if (resultParseXML.getRight().size() > 1
+                    && userId.isEmpty()) {
+                //Ошибка, найдено больше одного пользователя
+                response.appendLog(logFormatter.logError("Error: In CA found more than one active user for email" + email, this.getClass()));
+                return response;
             }
 
-            if ((int) resultFindUserCA.getRight().get("resultCount") <= 0) {
-                response.appendLog(logFormatter.log("User not found, Email: " + email, this.getClass()));
-
-                //Сформировать запрос на регисрацию пользователя
-                final String request = "<ProfileAttributesChange> \n"
-                        + "<To> \n"
-                        + "<Attribute Oid=\"" + caOIDUPN + "\" Value=\"" + ADLogin + "\" /> \n"
-                        + "<Attribute Oid=\"" + CAOIDemail + "\" Value=\"" + email + "\" /> \n"
-                        + "<Attribute Oid=\"" + caOIDCN + "\" Value=\"" + fio + "\" /> \n"
-                        + "</To> \n"
-                        + "</ProfileAttributesChange> \n";
-
-                response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + request, this.getClass()));
-
-                final Pair<PrivateKey, X509Certificate> cred = credLoader.loadCredentials(charPwd);
-                //Подписать запрос
-                final String resultSignRequestCABase64 = signRequestCA(request, cred.getLeft(), cred.getRight(), response);
-
-                if (resultSignRequestCABase64.isEmpty()) {
-                    response.appendLog(logFormatter.logError("Error wihile signing the request", this.getClass()));
-                    return response;
-                }
-
-                response.appendLog(logFormatter.log("Request is signed", this.getClass()));
-                //Выполнить запрос на регистрацию пользователя УЦ
-                final String keyPhrase = "key";
-                final String description = "СУИД:Предоставление доступа в УЦ";
-                final String managerComment = "СУИД:Предоставление доступа в УЦ";
-                final String resultSubmitAndAcceptRegRequest = port.getRight().submitAndAcceptRegRequest(folderID, resultSignRequestCABase64, email, keyPhrase, description, managerComment, Boolean.FALSE);
-
-                //Получить описание запроса на регистрацию + получить UserID
-                final String resultgetRegRequestRecord = port.getRight().getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
-
-                //Парсинг результата поиска пользователя УЦ
-                final List<String> parseAttrs = new ArrayList<>();
-                parseAttrs.add("UserId");
-                final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
-
-                if (!resultSignRequestCABase64.isEmpty()
-                        && resultParseXML.isEmpty()) {
-                    response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
-                }
-
-                if (!resultSignRequestCABase64.isEmpty()
-                        && resultParseXML.getRight().size() > 1) {
-
-                    //Ошибка, найдено больше одного пользователя
-                    response.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
-                    //Сохранить результат submitAndAcceptRegRequest (номер запроса)
-                    response.addEntry("RegID", resultSubmitAndAcceptRegRequest);
-                    return response;
-                }
-
-                response.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + resultParseXML.getRight().get(0).get(0), this.getClass()));
-
-                if (!resultSignRequestCABase64.isEmpty()
-                        && resultParseXML.getRight().size() == 1
-                        && resultParseXML.getRight().get(0).get(0).isEmpty()) {
-
-                    response.appendLog(logFormatter.logError("Error in the create new CA user, Not parsing result find userID for RegRequest", this.getClass()));
-                    response.addEntry("UserId", resultParseXML.getRight().get(0).get(0));
-                    return response;
-                }
-
-                //Создать маркер временного доступа для пользователя
-                final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), resultParseXML.getRight().get(0).get(0), webLogin, webPassword, response);
-
-                if (!resultSignRequestCABase64.isEmpty()
-                        && resultParseXML.getRight().size() == 1
-                        && resultParseXML.getRight().size() == 1
-                        && !resultParseXML.getRight().get(0).get(0).isEmpty()
-                        && resultCreateTokenForUser.isEmpty()) {
-
-                    return response;
-                }
-
-                if (!resultSignRequestCABase64.isEmpty()
-                        && resultParseXML.getRight().size() == 1
-                        && !resultParseXML.getRight().get(0).get(0).isEmpty()
-                        && !resultCreateTokenForUser.isEmpty()) {
-
-                    response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + email, this.getClass()));
-
-                    response.setResult("SUCCESS");
-                    response.addEntries(resultCreateTokenForUser);
-                    response.addEntry("UserId", resultParseXML.getRight().get(0).get(0));
-                    return response;
-
-                }
+            response.appendLog(logFormatter.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
+            //Создать маркер временного доступа для пользователя
+            final Pair<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), userId.get(), webLogin, webPassword, response);
+            if (resultCreateTokenForUser.isEmpty()) {
+                response.appendLog(logFormatter.logError(getStackTrace(resultCreateTokenForUser.getLeft()), this.getClass()));
             }
 
-            response.setResult("SUCCESS");
-            return response;
+            if (resultParseXML.getRight().size() > 1
+                    && userId.isPresent()
+                    && resultCreateTokenForUser.isEmpty()) {
 
-        } catch (Exception e) {
-            response.appendLog(logFormatter.logError(getStackTrace(e), this.getClass()));
-            response.setPropertyMap(emptyResult());
-            return response;
+                response.addEntry("UserId", userId.get());
+                return response;
+            }
+
+            if (resultParseXML.getRight().size() > 1
+                    && userId.isPresent()
+                    && !resultCreateTokenForUser.isEmpty()) {
+
+                response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId.get() + " Complite", this.getClass()));
+                response.setOutcome("SUCCESS");
+                response.addEntries(resultCreateTokenForUser.getRight());
+                return response;
+            }
+
         }
+
+        if ((int) resultFindUserCA.getRight().get("resultCount") <= 0) {
+            response.appendLog(logFormatter.log("User not found, Email: " + email, this.getClass()));
+
+            //Сформировать запрос на регисрацию пользователя
+            final String request = "<ProfileAttributesChange> \n"
+                    + "<To> \n"
+                    + "<Attribute Oid=\"" + caOIDUPN + "\" Value=\"" + ADLogin + "\" /> \n"
+                    + "<Attribute Oid=\"" + CAOIDemail + "\" Value=\"" + email + "\" /> \n"
+                    + "<Attribute Oid=\"" + caOIDCN + "\" Value=\"" + fio + "\" /> \n"
+                    + "</To> \n"
+                    + "</ProfileAttributesChange> \n";
+
+            response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + request, this.getClass()));
+
+            final Pair<? extends Throwable, Pair<PrivateKey, X509Certificate>> cred = credLoader.loadCredentials(charPwd);
+            if (cred.isEmpty()) {
+                response.appendLog(logFormatter.logError("Error while loding credentials", this.getClass()));
+                return response;
+            }
+            //Подписать запрос
+            final Pair<? extends Throwable, String> resultSignRequestCABase64 = signRequestCA(request, cred.getRight().getLeft(), cred.getRight().getRight(), response);
+
+            if (resultSignRequestCABase64.isEmpty()) {
+                response.appendLog(logFormatter.logError(getStackTrace(resultSignRequestCABase64.getLeft()), this.getClass()));
+                return response;
+            }
+
+            response.appendLog(logFormatter.log("Request is signed", this.getClass()));
+            //Выполнить запрос на регистрацию пользователя УЦ
+            final String keyPhrase = "key";
+            final String description = "СУИД:Предоставление доступа в УЦ";
+            final String managerComment = "СУИД:Предоставление доступа в УЦ";
+            final String resultSubmitAndAcceptRegRequest = port.getRight().submitAndAcceptRegRequest(folderID, resultSignRequestCABase64.getRight(), email, keyPhrase, description, managerComment, Boolean.FALSE);
+
+            //Получить описание запроса на регистрацию + получить UserID
+            final String resultgetRegRequestRecord = port.getRight().getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
+
+            //Парсинг результата поиска пользователя УЦ
+            final List<String> parseAttrs = new ArrayList<>();
+            parseAttrs.add("UserId");
+            final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
+
+            if (!resultSignRequestCABase64.isEmpty()
+                    && resultParseXML.isEmpty()) {
+                response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+            }
+
+            if (!resultSignRequestCABase64.isEmpty()
+                    && resultParseXML.getRight().size() > 1) {
+
+                //Ошибка, найдено больше одного пользователя
+                response.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
+                //Сохранить результат submitAndAcceptRegRequest (номер запроса)
+                response.addEntry("RegID", resultSubmitAndAcceptRegRequest);
+                return response;
+            }
+
+            response.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + resultParseXML.getRight().get(0).get(0), this.getClass()));
+
+            if (!resultSignRequestCABase64.isEmpty()
+                    && resultParseXML.getRight().size() == 1
+                    && resultParseXML.getRight().get(0).get(0).isEmpty()) {
+
+                response.appendLog(logFormatter.logError("Error in the create new CA user, Not parsing result find userID for RegRequest", this.getClass()));
+                response.addEntry("UserId", resultParseXML.getRight().get(0).get(0));
+                return response;
+            }
+
+            //Создать маркер временного доступа для пользователя
+            final Pair<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), resultParseXML.getRight().get(0).get(0), webLogin, webPassword, response);
+
+            if (resultCreateTokenForUser.isEmpty()) {
+                response.appendLog(logFormatter.logError(getStackTrace(resultCreateTokenForUser.getLeft()), this.getClass()));
+                return response;
+            }
+            
+            if (!resultSignRequestCABase64.isEmpty()
+                    && resultParseXML.getRight().size() == 1
+                    && !resultParseXML.getRight().get(0).get(0).isEmpty()
+                    && resultCreateTokenForUser.isEmpty()) {
+
+                return response;
+            }
+
+            if (!resultSignRequestCABase64.isEmpty()
+                    && resultParseXML.getRight().size() == 1
+                    && !resultParseXML.getRight().get(0).get(0).isEmpty()
+                    && !resultCreateTokenForUser.isEmpty()) {
+
+                response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + email, this.getClass()));
+
+                response.setResult("SUCCESS");
+                response.addEntries(resultCreateTokenForUser.getRight());
+                response.addEntry("UserId", resultParseXML.getRight().get(0).get(0));
+                return response;
+
+            }
+        }
+
+        response.setResult("SUCCESS");
+        return response;
 
     }
 
@@ -299,23 +305,22 @@ public class ITSKCASoap {
         return Option.empty();
     }
 
-    public HashMap createTokenForUser(
+    public Pair<? extends Throwable, HashMap> createTokenForUser(
             RegAuthLegacyContract port,
             String userID,
             Holder<String> webLogin,
             Holder<String> webPassword,
             ResponseITSKCASoap response
-    ) throws RegAuthLegacyContractCreateTokenForUserErrorInfoFaultMessage {
+    ) {
 
         HashMap result = new HashMap();
         try {
             port.createTokenForUser(userID, webLogin, webPassword);
             result.put("webLogin", webLogin.value);
             result.put("webPassword", webPassword.value);
-            return result;
+            return Pair.right(result);
         } catch (Exception e) {
-            response.appendLog(logFormatter.logError(getStackTrace(e), this.getClass()));
-            return result;
+            return Pair.left(e);
         }
     }
 
@@ -346,7 +351,7 @@ public class ITSKCASoap {
             Holder<Integer> resultCount = new Holder<>();
             Holder<Integer> totalRowCount = new Holder<>();
             String resultSubmitAndAcceptRevReques = "";
-            String resultSignRequestCABase64 = "";
+            Pair<? extends Throwable, String> resultSignRequestCABase64;
             Pair<? extends Throwable, HashMap<String, Object>> ResultFindUserCA;
             String CAuserID = "";
             //Email = "Andrianov.IA@gazprom-neft.ru";//"Moskvichev.IA@Gazprom-Neft.RU";
@@ -401,7 +406,7 @@ public class ITSKCASoap {
                                 resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
 
                                 //Отзыв сертификатов пользователя
-                                resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
+                                resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64.getRight(), "СУИД", Boolean.TRUE);
 
                                 //Сохраняем сертификаты на отзыв
                                 revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.getRight().get(i).get(0) + ";";
@@ -473,7 +478,7 @@ public class ITSKCASoap {
                                     resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
 
                                     //Отзыв сертификатов пользователя
-                                    resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
+                                    resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64.getRight(), "СУИД", Boolean.TRUE);
 
                                     //Сохраняем сертификаты на отзыв
                                     revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.getRight().get(i).get(0) + ";";
@@ -533,7 +538,7 @@ public class ITSKCASoap {
                                         resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
 
                                         //Отзыв сертификатов пользователя
-                                        resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
+                                        resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64.getRight(), "СУИД", Boolean.TRUE);
 
                                         revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.getRight().get(i).get(0) + ";";
                                         response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.getRight().get(i).get(0) + " to user " + Email, this.getClass()));
@@ -578,23 +583,23 @@ public class ITSKCASoap {
         }
     }
 
-    public String signRequestCA(
+    public Pair<? extends Throwable, String> signRequestCA(
             String StrRequest,
             PrivateKey privateKey,
             X509Certificate cert,
             ResponseITSKCASoap response
-    ) throws Exception {
-        //Подпись как PKCS7 с использованием CMS
-        byte[] data = StrRequest.getBytes("UTF-16LE");
-        final PrivateKey[] keys = new PrivateKey[1];
-        keys[0] = privateKey;
-        final Certificate[] certs = new Certificate[1];
-        certs[0] = cert;
-        String DIGEST_OID = JCP.GOST_DIGEST_OID;
-        String SIGN_OID = JCP.GOST_EL_KEY_OID;
-        boolean isCMS = true;
-
+    ) {
         try {
+            //Подпись как PKCS7 с использованием CMS
+            byte[] data = StrRequest.getBytes("UTF-16LE");
+            final PrivateKey[] keys = new PrivateKey[1];
+            keys[0] = privateKey;
+            final Certificate[] certs = new Certificate[1];
+            certs[0] = cert;
+            String DIGEST_OID = JCP.GOST_DIGEST_OID;
+            String SIGN_OID = JCP.GOST_EL_KEY_OID;
+            boolean isCMS = true;
+
             //byte[] resBase64String = null;
             final Asn1BerDecodeBuffer asnBuf = new Asn1BerDecodeBuffer(data);
             final ContentInfo all = new ContentInfo();
@@ -603,13 +608,9 @@ public class ITSKCASoap {
             res = createCMS(res, keys, certs, false);
             ru.CryptoPro.JCP.tools.Encoder encoder = new ru.CryptoPro.JCP.tools.Encoder();
             String resBase64String = encoder.encode(res);
-//System.out.println(resBase64String);
-            return resBase64String;
+            return Pair.right(resBase64String);
         } catch (Exception e) {
-            String ss = getStackTrace(e);
-            response.appendLog(logFormatter.logError(ss, this.getClass()));
-            //LOGGER.log(Level.SEVERE, "Error signed request CA:" + StrRequest, e);
-            return "";
+            return Pair.left(e);
         }
     }
 
