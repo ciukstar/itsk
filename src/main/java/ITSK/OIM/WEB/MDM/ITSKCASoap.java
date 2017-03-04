@@ -99,14 +99,20 @@ public class ITSKCASoap {
                 response.setPropertyMap(emptyResult());
                 return response;
 
-            } else if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
+            }
+
+            if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
                 //Дополнитьльно для парсинга добавляем статус пользователя
                 parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                final List<List<String>> resultParseXML = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrs, response);
+                final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrs);
 
-                if (resultParseXML.size() > 0) {
-                    final List<List<String>> users = resultParseXML;
+                if (resultParseXML.isEmpty()) {
+                    response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                }
+
+                if (resultParseXML.getRight().size() > 0) {
+                    final List<List<String>> users = resultParseXML.getRight();
 
                     response.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
 
@@ -214,9 +220,13 @@ public class ITSKCASoap {
                     final String resultgetRegRequestRecord = port.getRight().getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
 
                     //Парсинг результата поиска пользователя УЦ
-                    final List<List<String>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs, response);
-                    if (resultParseXML.size() == 1) {
-                        final String userId = resultParseXML.get(0).get(0);
+                    final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
+                    if (resultParseXML.isEmpty()) {
+                        response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                    }
+
+                    if (resultParseXML.getRight().size() == 1) {
+                        final String userId = resultParseXML.getRight().get(0).get(0);
                         result.put("UserId", userId);
 
                         response.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + userId, this.getClass()));
@@ -317,7 +327,7 @@ public class ITSKCASoap {
             Pair<? extends Throwable, HashMap<String, Object>> ResultFindUserCA;
             String CAuserID = "";
             //Email = "Andrianov.IA@gazprom-neft.ru";//"Moskvichev.IA@Gazprom-Neft.RU";
-            List<List<String>> resultParseXML = new ArrayList<>();
+            Pair<? extends Throwable, List<List<String>>> resultParseXML;
             List<String> parseAttrsCert = new ArrayList<>();
             List<String> parseAttrsUsr = new ArrayList<>();
             parseAttrsCert.add("SerialNumber");
@@ -355,11 +365,14 @@ public class ITSKCASoap {
                         if (resultCount.value > 0) {
                             response.appendLog(logFormatter.log("complite find list of certificates CA, userID " + UserID, this.getClass()));
                             //Парсинг результата поиска сертификатов пользователя УЦ
-                            resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
+                            resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                            if (resultParseXML.isEmpty()) {
+                                response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                            }
 
                             //Сформировать запрос на отзыв сертификатов пользователя
-                            for (int i = 0; i < resultParseXML.size(); i++) {
-                                RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
+                            for (int i = 0; i < resultParseXML.getRight().size(); i++) {
+                                RevRequest = "SN=" + resultParseXML.getRight().get(i).get(0) + ",TP=" + resultParseXML.getRight().get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                 //Подписать запрос
                                 resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
@@ -368,8 +381,8 @@ public class ITSKCASoap {
                                 resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
 
                                 //Сохраняем сертификаты на отзыв
-                                revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.get(i).get(0) + ";";
-                                response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, this.getClass()));
+                                revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.getRight().get(i).get(0) + ";";
+                                response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.getRight().get(i).get(0) + " to user " + Email, this.getClass()));
 
                             }
 
@@ -414,10 +427,14 @@ public class ITSKCASoap {
                     if (ResultFindUserCA.getRight().get("resultCount").equals(1)) {
                         response.appendLog(logFormatter.log("Find user for email" + Email + " in CA", this.getClass()));
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parser.parseXML(ResultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr, response);
+                        resultParseXML = parser.parseXML(ResultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr);
 
-                        if (resultParseXML.size() == 1) {
-                            CAuserID = resultParseXML.get(0).get(0);
+                        if (resultParseXML.isEmpty()) {
+                            response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                        }
+
+                        if (resultParseXML.getRight().size() == 1) {
+                            CAuserID = resultParseXML.getRight().get(0).get(0);
                             result.put("UserId", CAuserID);
 
                             response.appendLog(logFormatter.log("Parsing result search user " + CAuserID + " complite", this.getClass()));
@@ -434,11 +451,13 @@ public class ITSKCASoap {
                                 response.appendLog(logFormatter.log("Complite find list of certificates, userID " + CAuserID + " in CA", this.getClass()));
 
                                 //Парсинг результата поиска сертификатов пользователя УЦ
-                                resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert, response);
-
+                                resultParseXML = parser.parseXML(getCertificateRecordListResult.value, parseAttrsCert);
+                                if (resultParseXML.isEmpty()) {
+                                    response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                                }
                                 //Сформировать запрос на отзыв сертификатов пользователя
-                                for (int i = 0; i < resultParseXML.size(); i++) {
-                                    RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
+                                for (int i = 0; i < resultParseXML.getRight().size(); i++) {
+                                    RevRequest = "SN=" + resultParseXML.getRight().get(i).get(0) + ",TP=" + resultParseXML.getRight().get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                     //Подписать запрос
                                     resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
@@ -447,8 +466,8 @@ public class ITSKCASoap {
                                     resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
 
                                     //Сохраняем сертификаты на отзыв
-                                    revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.get(i).get(0) + ";";
-                                    response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, this.getClass()));
+                                    revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.getRight().get(i).get(0) + ";";
+                                    response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.getRight().get(i).get(0) + " to user " + Email, this.getClass()));
 
                                 }
 
@@ -488,13 +507,16 @@ public class ITSKCASoap {
                         parseAttrsUsr.add("Status");
 
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parser.parseXML(ResultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr, response);
+                        resultParseXML = parser.parseXML(ResultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        if (resultParseXML.isEmpty()) {
+                            response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                        }
 
-                        if (resultParseXML.size() > 0) {
-                            for (int i = 0; i < resultParseXML.size(); i++) {
-                                if (resultParseXML.get(i).get(1).equals("A")) {
+                        if (resultParseXML.getRight().size() > 0) {
+                            for (int i = 0; i < resultParseXML.getRight().size(); i++) {
+                                if (resultParseXML.getRight().get(i).get(1).equals("A")) {
                                     j = j + 1;
-                                    CAuserID = resultParseXML.get(i).get(0);
+                                    CAuserID = resultParseXML.getRight().get(i).get(0);
                                     result.put("UserId", CAuserID);
                                 }
 
@@ -507,8 +529,8 @@ public class ITSKCASoap {
                                 if (resultCount.value > 0) {
                                     response.appendLog(logFormatter.log("Complite find list of certificates, userID " + CAuserID + " in CA", this.getClass()));
                                     //Сформировать запрос на отзыв сертификатов пользователя
-                                    for (int i = 0; i < resultParseXML.size(); i++) {
-                                        RevRequest = "SN=" + resultParseXML.get(i).get(0) + ",TP=" + resultParseXML.get(i).get(1) + ",RR=" + RevocationReason + "";
+                                    for (int i = 0; i < resultParseXML.getRight().size(); i++) {
+                                        RevRequest = "SN=" + resultParseXML.getRight().get(i).get(0) + ",TP=" + resultParseXML.getRight().get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                         //Подписать запрос
                                         resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
@@ -516,8 +538,8 @@ public class ITSKCASoap {
                                         //Отзыв сертификатов пользователя
                                         resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64, "СУИД", Boolean.TRUE);
 
-                                        revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.get(i).get(0) + ";";
-                                        response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.get(i).get(0) + " to user " + Email, this.getClass()));
+                                        revCertList = revCertList + "RevID: " + resultSubmitAndAcceptRevReques + ",CertSerialNum: " + resultParseXML.getRight().get(i).get(0) + ";";
+                                        response.appendLog(logFormatter.log("Revoked certificate SR-" + resultParseXML.getRight().get(i).get(0) + " to user " + Email, this.getClass()));
 
                                     }
 

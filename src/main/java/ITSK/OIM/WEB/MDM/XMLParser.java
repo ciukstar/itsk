@@ -1,36 +1,43 @@
 package ITSK.OIM.WEB.MDM;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
  *
  * @author sergiu
  */
 public class XMLParser {
+
     private final LogFormater logger;
 
     public XMLParser(LogFormater logger) {
         this.logger = logger;
     }
 
-    public List<List<String>> parseXML(String XMLString, List<String> Element, ResponseITSKCASoap response) throws Exception {
-        List<String> resultStr = new ArrayList<>();
-        List<List<String>> result = new ArrayList<>();
-        List<String> listStrElems = new ArrayList<>();
-        InputSource streamXML = new InputSource(new StringReader(XMLString));
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        String strElems = "";
+    public Pair<? extends Throwable, List<List<String>>> parseXML(String XMLString, List<String> Element) {
         try {
+            List<String> resultStr = new ArrayList<>();
+            List<List<String>> result = new ArrayList<>();
+            List<String> listStrElems = new ArrayList<>();
+            InputSource streamXML = new InputSource(new StringReader(XMLString));
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            String strElems = "";
             Document document = builder.parse(streamXML);
             NodeList nodes = document.getElementsByTagName("rs:data");
             Element element1 = (Element) nodes.item(0);
@@ -52,15 +59,10 @@ public class XMLParser {
                 resultStr = Arrays.asList(listStrElems.get(i).split("\\|\\|"));
                 result.add(i, resultStr);
             }
-            return result;
-        } catch (Exception e) {
-            String ss = ITSKCASoap.getStackTrace(e);
-            response.appendLog(logger.logError(ss, this.getClass()));
-            //LOGGER.log(Level.SEVERE, "Error parser result find user CA:", e);
-            return result;
-            //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));
+            return Pair.right(result);
+        } catch (IOException | DOMException | SAXException | ParserConfigurationException e) {
+            return Pair.left(e);
         }
     }
-    
+
 }

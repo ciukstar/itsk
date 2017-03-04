@@ -29,7 +29,7 @@ public class UCTest {
     
     @Test
     public void testSomeMethod() {
-        RegAuthLegacyContract port = uc.initializeCA(new HashMap<String, Object>(), new ResponseITSKCASoap());
+        Pair<? extends Throwable, RegAuthLegacyContract> result = uc.initializeCA(new HashMap<String, Object>());
     }
     
 }

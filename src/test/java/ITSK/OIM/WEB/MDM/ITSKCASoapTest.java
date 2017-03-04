@@ -34,7 +34,7 @@ public class ITSKCASoapTest {
     @Mock
     private UC uc;
     @Mock
-    private LogFormater logger;
+    private LogFormater formatter;
     @Mock
     private XMLParser parser;
     
@@ -63,13 +63,14 @@ public class ITSKCASoapTest {
         
         ResponseITSKCASoap result = sample.createUser(email, "ciukstar", "Sergiu Starciuc", params);
                 
-        assertFalse(result.isEmpty());
+        assertTrue(result.isEmpty());
         
     }
 
     @Test
-    public void shouldReturnAnEmptyResponse() throws Exception {
-        final Pair<? extends Throwable, RegAuthLegacyContract> port = Pair.right(mock(RegAuthLegacyContract.class));
+    public void shouldReturnAnEmptyWhenUcUserNotFound() throws Exception {
+        final RegAuthLegacyContract thePort = mock(RegAuthLegacyContract.class);
+        final Pair<? extends Throwable, RegAuthLegacyContract> port = Pair.right(thePort);
         final HashMap params = new HashMap();
         final ResponseITSKCASoap response = new ResponseITSKCASoap();
         final String email = "ciukstar@yahoo.com";
@@ -78,13 +79,14 @@ public class ITSKCASoapTest {
         
         doReturn(port)
                 .when(uc).initializeCA(params);
-        doReturn(Pair.right(new HashMap<>()))
-                .when(uc).findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
+        doReturn(Pair.left(new RuntimeException("Error")))
+                .when(uc).findUcUser(params, folderID, thePort, CAOIDemail, email);
         
         
         ResponseITSKCASoap result = sample.createUser(email, "ciukstar", "Sergiu Starciuc", params);
                 
         assertTrue(result.isEmpty());
+        assertFalse(result.getLog().isEmpty());
         
     }
     
