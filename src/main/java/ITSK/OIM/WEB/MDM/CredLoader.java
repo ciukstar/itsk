@@ -16,14 +16,14 @@ import ru.CryptoPro.JCP.JCP;
  */
 public class CredLoader {
 
-    Either<? extends Throwable, Either<PrivateKey, X509Certificate>> loadCredentials(char[] charPwd) {
+    Either<? extends Throwable, Credentials> loadCredentials(char[] charPwd) {
         //Загрузить KeyStore
         try {
             KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
             keyStore.load(null, null);
             PrivateKey privateKey = (PrivateKey) keyStore.getKey("CA", charPwd);
             X509Certificate cert = (X509Certificate) keyStore.getCertificate("CA");
-            return Either.right(Either.of(privateKey, cert));
+            return Either.right(new Credentials(privateKey, cert));
         } catch (CertificateException | IOException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             return Either.left(e);
         }

@@ -204,13 +204,13 @@ public class ITSKCASoap {
 
             response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + request, this.getClass()));
 
-            final Either<? extends Throwable, Either<PrivateKey, X509Certificate>> cred = credLoader.loadCredentials(charPwd);
+            final Either<? extends Throwable, Credentials> cred = credLoader.loadCredentials(charPwd);
             if (cred.isEmpty()) {
                 response.appendLog(logFormatter.logError("Error while loding credentials", this.getClass()));
                 return response;
             }
             //Подписать запрос
-            final Either<? extends Throwable, String> resultSignRequestCABase64 = signRequestCA(request, cred.getRight().getLeft(), cred.getRight().getRight(), response);
+            final Either<? extends Throwable, String> resultSignRequestCABase64 = signRequestCA(request, cred.getRight());
 
             if (resultSignRequestCABase64.isEmpty()) {
                 response.appendLog(logFormatter.logError(getStackTrace(resultSignRequestCABase64.getLeft()), this.getClass()));
@@ -370,11 +370,13 @@ public class ITSKCASoap {
             port = uc.initializeCA(Params);
 
             //Загрузить KeyStore
-            KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
+            final KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
             keyStore.load(null, null);
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey("CA", charPwd);
-            X509Certificate cert = (X509Certificate) keyStore.getCertificate("CA");
-
+            final Credentials credentials = new Credentials(
+                    (PrivateKey) keyStore.getKey("CA", charPwd), 
+                    (X509Certificate) keyStore.getCertificate("CA")
+            );
+            
             if (!UserID.isEmpty()) {
                 result.put("UserId", UserID);
 
@@ -403,7 +405,7 @@ public class ITSKCASoap {
                                 RevRequest = "SN=" + resultParseXML.getRight().get(i).get(0) + ",TP=" + resultParseXML.getRight().get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                 //Подписать запрос
-                                resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
+                                resultSignRequestCABase64 = signRequestCA(RevRequest, credentials);
 
                                 //Отзыв сертификатов пользователя
                                 resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64.getRight(), "СУИД", Boolean.TRUE);
@@ -475,7 +477,7 @@ public class ITSKCASoap {
                                     RevRequest = "SN=" + resultParseXML.getRight().get(i).get(0) + ",TP=" + resultParseXML.getRight().get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                     //Подписать запрос
-                                    resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
+                                    resultSignRequestCABase64 = signRequestCA(RevRequest, credentials);
 
                                     //Отзыв сертификатов пользователя
                                     resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64.getRight(), "СУИД", Boolean.TRUE);
@@ -535,7 +537,7 @@ public class ITSKCASoap {
                                         RevRequest = "SN=" + resultParseXML.getRight().get(i).get(0) + ",TP=" + resultParseXML.getRight().get(i).get(1) + ",RR=" + RevocationReason + "";
 
                                         //Подписать запрос
-                                        resultSignRequestCABase64 = signRequestCA(RevRequest, privateKey, cert, response);
+                                        resultSignRequestCABase64 = signRequestCA(RevRequest, credentials);
 
                                         //Отзыв сертификатов пользователя
                                         resultSubmitAndAcceptRevReques = port.getRight().submitAndAcceptRevRequest(resultSignRequestCABase64.getRight(), "СУИД", Boolean.TRUE);
@@ -583,19 +585,14 @@ public class ITSKCASoap {
         }
     }
 
-    public Either<? extends Throwable, String> signRequestCA(
-            String StrRequest,
-            PrivateKey privateKey,
-            X509Certificate cert,
-            ResponseITSKCASoap response
-    ) {
+    public Either<? extends Throwable, String> signRequestCA(String StrRequest, Credentials credentials) {
         try {
             //Подпись как PKCS7 с использованием CMS
             byte[] data = StrRequest.getBytes("UTF-16LE");
             final PrivateKey[] keys = new PrivateKey[1];
-            keys[0] = privateKey;
+            keys[0] = credentials.getPrivateKey();
             final Certificate[] certs = new Certificate[1];
-            certs[0] = cert;
+            certs[0] = credentials.getCertificate();
             String DIGEST_OID = JCP.GOST_DIGEST_OID;
             String SIGN_OID = JCP.GOST_EL_KEY_OID;
             boolean isCMS = true;
