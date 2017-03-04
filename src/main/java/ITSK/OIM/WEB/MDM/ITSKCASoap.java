@@ -54,7 +54,6 @@ public class ITSKCASoap {
     }
 
     public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap params) {
-        ResponseITSKCASoap response = new ResponseITSKCASoap();
 
         //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
         //System.getProperties().put("https.proxyPort", "80");
@@ -70,11 +69,7 @@ public class ITSKCASoap {
         //String CAOIDemail = Params.get("CN").toString();
         String caOIDCN = "2.5.4.3";
 
-        final Holder<String> webLogin = new Holder<>();
-        final Holder<String> webPassword = new Holder<>();
-        webLogin.value = "";
-        webPassword.value = "";
-
+        ResponseITSKCASoap response = new ResponseITSKCASoap();
         response.appendLog(
                 logFormatter.log("Begin find user " + email + " in CA", this.getClass())
         );
@@ -127,6 +122,11 @@ public class ITSKCASoap {
 
             final String usrid = resultParseXML.getRight().get(0).get(0);
             response.appendLog(logFormatter.log("User found, User ID: " + usrid, this.getClass()));
+
+            final Holder<String> webLogin = new Holder<>();
+            final Holder<String> webPassword = new Holder<>();
+            webLogin.value = "";
+            webPassword.value = "";
 
             //Создать маркер временного доступа для пользователя
             final Either<? extends Throwable, HashMap> userToken = createTokenForUser(port.getRight(), usrid, webLogin, webPassword, response);
@@ -258,6 +258,10 @@ public class ITSKCASoap {
                 return response;
             }
 
+            final Holder<String> webLogin = new Holder<>();
+            final Holder<String> webPassword = new Holder<>();
+            webLogin.value = "";
+            webPassword.value = "";
             //Создать маркер временного доступа для пользователя
             final Either<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), resultParseXML.getRight().get(0).get(0), webLogin, webPassword, response);
 
@@ -265,7 +269,7 @@ public class ITSKCASoap {
                 response.appendLog(logFormatter.logError(getStackTrace(resultCreateTokenForUser.getLeft()), this.getClass()));
                 return response;
             }
-            
+
             if (!resultSignRequestCABase64.isEmpty()
                     && resultParseXML.getRight().size() == 1
                     && !resultParseXML.getRight().get(0).get(0).isEmpty()
@@ -373,10 +377,10 @@ public class ITSKCASoap {
             final KeyStore keyStore = KeyStore.getInstance(JCP.HD_STORE_NAME);
             keyStore.load(null, null);
             final Credentials credentials = new Credentials(
-                    (PrivateKey) keyStore.getKey("CA", charPwd), 
+                    (PrivateKey) keyStore.getKey("CA", charPwd),
                     (X509Certificate) keyStore.getCertificate("CA")
             );
-            
+
             if (!UserID.isEmpty()) {
                 result.put("UserId", UserID);
 
