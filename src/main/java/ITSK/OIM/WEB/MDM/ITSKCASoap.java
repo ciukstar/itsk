@@ -392,19 +392,6 @@ public class ITSKCASoap {
                         } else {
                             response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                         }
-
-                        /*
-                        //Парсинг результата поиска пользователя УЦ
-                        parseAttrsUsr.clear();
-                        parseAttrsUsr.add("Status");
-                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
-                        if (resultParseXML.get(0).trim().equals("A"))
-                         {
-                            //Блокируем пользователя УЦ
-                             port.deactivateUser(UserID, Boolean.TRUE);
-                         }
-                        log("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
-                         */
                         response.result = "SUCCESS";
                         response.propertyMap = result;
                         return response;
@@ -478,19 +465,6 @@ public class ITSKCASoap {
                                 response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                             }
 
-                            /*
-                         //Парсинг результата поиска пользователя УЦ
-                        parseAttrsUsr.clear();
-                        parseAttrsUsr.add("Status");
-                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
-
-                        if (resultParseXML.get(0).trim().equals("A"))
-                         {
-                            //Блокируем пользователя УЦ
-                             port.deactivateUser(CAuserID, Boolean.TRUE);
-                         }
-                        log("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
-                             */
                             response.result = "SUCCESS";
                             response.propertyMap = result;
                             return response;
@@ -549,20 +523,6 @@ public class ITSKCASoap {
                                 } else {
                                     response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                                 }
-
-                                /*
-                         //Парсинг результата поиска пользователя УЦ
-
-                        parseAttrsUsr.clear();
-                        parseAttrsUsr.add("Status");
-                        resultParseXML = objITSKCASoap.parseXML(ResultFindUserCA.get("getUserRecordListResult").toString(),parseAttrsUsr);
-                        if (resultParseXML.get(0).trim().equals("A"))
-                         {
-                            //Блокируем пользователя УЦ
-                             port.deactivateUser(CAuserID, Boolean.TRUE);
-                         }
-                        log("MDM: Deactivate User CA is complite, userID "+ UserID +" in CA");
-                                 */
                                 response.result = "SUCCESS";
                                 response.propertyMap = result;
                                 return response;
