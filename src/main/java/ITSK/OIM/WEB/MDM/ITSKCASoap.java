@@ -86,11 +86,10 @@ public class ITSKCASoap {
             response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, this.getClass()));
             response.setPropertyMap(emptyResult());
             return response;
-
         }
 
         if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
-            if (checkoutUser(resultFindUserCA, response, email, port)) return response;
+            if (checkoutUser(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), response, email, port)) return response;
 
         }
 
@@ -103,11 +102,11 @@ public class ITSKCASoap {
 
     }
 
-    boolean checkoutUser(final Either<? extends Throwable, Map<String, Object>> resultFindUserCA, ResponseITSKCASoap response, String email, Either<? extends Throwable, RegAuthLegacyContract> port) {
+    boolean checkoutUser(String getUserRecordListResult, ResponseITSKCASoap response, String email, Either<? extends Throwable, RegAuthLegacyContract> port) {
         //Дополнитьльно для парсинга добавляем статус пользователя
         //Парсинг результата поиска пользователя УЦ
         final Either<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
-                resultFindUserCA.getRight().get("getUserRecordListResult").toString(),
+                getUserRecordListResult,
                 Arrays.asList("UserId", "Status")
         );
         if (resultParseXML.isEmpty()) {

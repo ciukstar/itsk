@@ -26,14 +26,24 @@ public class UC {
     }
     
     Either<? extends Throwable, Map<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
-        Holder<String> getUserRecordListResult = new Holder<>();
-        Holder<Integer> resultCount = new Holder<>();
-        Holder<Integer> totalRowCount = new Holder<>();
-        Map<String, Object> result = new HashMap<>();
+        Holder<String> userRecordListHolder = new Holder<>();
+        Holder<Integer> resultCountHolder = new Holder<>();
+        Holder<Integer> totalRowCountHolder = new Holder<>();
         try {
-            port.getUserRecordList(folderID, "", "", Boolean.TRUE, condFild, condValue, condOperator, 1, 100, Boolean.TRUE, getUserRecordListResult, resultCount, totalRowCount);
-            result.put("resultCount", resultCount.value);
-            result.put("getUserRecordListResult", getUserRecordListResult.value);
+            port.getUserRecordList(
+                    folderID, "", "", 
+                    Boolean.TRUE, 
+                    condFild, 
+                    condValue, 
+                    condOperator, 1, 100, 
+                    Boolean.TRUE, 
+                    userRecordListHolder, 
+                    resultCountHolder, 
+                    totalRowCountHolder);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("resultCount", resultCountHolder.value);
+            result.put("getUserRecordListResult", userRecordListHolder.value);
             return Either.right(result);
         } catch (Exception e) {
             return Either.left(e);
