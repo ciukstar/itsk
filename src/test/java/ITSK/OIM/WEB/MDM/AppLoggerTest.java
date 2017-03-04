@@ -24,7 +24,7 @@ public class AppLoggerTest {
     }
 
     @InjectMocks
-    private AppLogger logger;
+    private LogFormater logger;
 
     private final String logFormat = "<%s> <%s> <MDM> <LOG> %s%n";
     private final String errorFormat = "<%s> <%s> <MDM> <ERROR> %s%n";
@@ -33,7 +33,6 @@ public class AppLoggerTest {
     private final ResponseITSKCASoap response = new ResponseITSKCASoap();
     private final Class loggedClass = ITSKCASoap.class;
     private final Date time = new Date();
-
 
     @Test
     public void shouldFormatAndUpdateResponseErrorLog() {

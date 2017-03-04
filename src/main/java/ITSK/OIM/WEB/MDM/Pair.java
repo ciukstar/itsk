@@ -33,4 +33,8 @@ public class Pair<L, R> {
         return right;
     }
 
+    public boolean isEmpty() {
+        return null == getRight();
+    }
+
 }

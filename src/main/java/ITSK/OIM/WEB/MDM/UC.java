@@ -18,46 +18,42 @@ import sun.net.www.protocol.https.Handler;
  */
 public class UC {
 
-    private final AppLogger logger;
+    private final LogFormater logger;
     private final RegAuthLegacyService service;
 
-    public UC(AppLogger logger, RegAuthLegacyService service) {
+    public UC(LogFormater logger, RegAuthLegacyService service) {
         this.logger = logger;
         this.service = service;
     }
     
-    public HashMap findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port, ResponseITSKCASoap response) throws Exception {
+    Pair<? extends Throwable, HashMap<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
         Holder<String> getUserRecordListResult = new Holder<>();
         Holder<Integer> resultCount = new Holder<>();
         Holder<Integer> totalRowCount = new Holder<>();
-        HashMap result = new HashMap();
+        HashMap<String, Object> result = new HashMap<>();
         try {
             port.getUserRecordList(folderID, "", "", Boolean.TRUE, condFild, condValue, condOperator, 1, 100, Boolean.TRUE, getUserRecordListResult, resultCount, totalRowCount);
             result.put("resultCount", resultCount.value);
             result.put("getUserRecordListResult", getUserRecordListResult.value);
+            return Pair.right(result);
         } catch (Exception e) {
-            String ss = ITSKCASoap.getStackTrace(e);
-            response.appendLog(logger.logError(ss, this.getClass()));
-            return result;
+            return Pair.left(e);
         }
-        return result;
     }
 
-    HashMap<String, Object> findUcUser(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email, ResponseITSKCASoap response) throws Exception {
-        HashMap<String, Object> resultFindUserCA;
+    public Pair<? extends Throwable, HashMap<String, Object>> findUcUser(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) {
         //Поск пользователя УЦ
         if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
             //Поск пользователя УЦ по UserID CA
             final String userId = params.get("CAUSERID").toString().trim();
-            resultFindUserCA = findUserCA(folderID, "UserId", userId, 8, port, response);
+            return findUserCA(folderID, "UserId", userId, 8, port);
         } else {
             //Поск пользователя УЦ по Email
-            resultFindUserCA = findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port, response);
+            return findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port);
         }
-        return resultFindUserCA;
     }
 
-    public RegAuthLegacyContract initializeCA(HashMap<String, Object> params, ResponseITSKCASoap response) {
+    public Pair<? extends Throwable, RegAuthLegacyContract> initializeCA(HashMap<String, Object> params) {
         RegAuthLegacyContract port = null;
         try {
             //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
@@ -97,10 +93,9 @@ public class UC {
             //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.connect.timeout", 60000);
             //Устанавливаем таймаут запроса
             //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.request.timeout", 30000);
-            return port;
+            return Pair.right(port);
         } catch (MalformedURLException e) {
-            response.appendLog(logger.logError(ITSKCASoap.getStackTrace(e), this.getClass()));
-            return null;
+            return Pair.left(e);
         }
     }
     

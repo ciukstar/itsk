@@ -12,6 +12,7 @@ import org.mockito.InjectMocks;
 import static org.mockito.Matchers.any;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -33,7 +34,7 @@ public class ITSKCASoapTest {
     @Mock
     private UC uc;
     @Mock
-    private AppLogger logger;
+    private LogFormater logger;
     @Mock
     private XMLParser parser;
     
@@ -41,21 +42,49 @@ public class ITSKCASoapTest {
     private ITSKCASoap sample;
 
     @Test
-    public void shouldReturnAnEmptyResponse() throws Exception {
-        final RegAuthLegacyContract port = mock(RegAuthLegacyContract.class);
+    public void foo() throws Exception {
+        final Pair<? extends Throwable, RegAuthLegacyContract> port = Pair.right(mock(RegAuthLegacyContract.class));
         final HashMap params = new HashMap();
         final ResponseITSKCASoap response = new ResponseITSKCASoap();
         final String email = "ciukstar@yahoo.com";
+        final String folderID = "c5619331-7426-e611-80ed-00505681c485";
         final String CAOIDemail = "1.2.840.113549.1.9.1";
+        final HashMap<String, Object> userInfo = new HashMap<String, Object>() {{
+            put("resultCount", 1);
+        }};
+                
+        Pair<? extends Throwable, HashMap<String, Object>> right = Pair.right(userInfo);
         
-        when(uc.initializeCA(params, response)).thenReturn(port);
+        doReturn(port)
+                .when(uc).initializeCA(params);
+        doReturn(Pair.right(userInfo))
+                .when(uc).findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
+        
         
         ResponseITSKCASoap result = sample.createUser(email, "ciukstar", "Sergiu Starciuc", params);
-
-        final String expectedLog = "Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email;
+                
+        assertFalse(result.isEmpty());
         
+    }
+
+    @Test
+    public void shouldReturnAnEmptyResponse() throws Exception {
+        final Pair<? extends Throwable, RegAuthLegacyContract> port = Pair.right(mock(RegAuthLegacyContract.class));
+        final HashMap params = new HashMap();
+        final ResponseITSKCASoap response = new ResponseITSKCASoap();
+        final String email = "ciukstar@yahoo.com";
+        final String folderID = "c5619331-7426-e611-80ed-00505681c485";
+        final String CAOIDemail = "1.2.840.113549.1.9.1";
+        
+        doReturn(port)
+                .when(uc).initializeCA(params);
+        doReturn(Pair.right(new HashMap<>()))
+                .when(uc).findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
+        
+        
+        ResponseITSKCASoap result = sample.createUser(email, "ciukstar", "Sergiu Starciuc", params);
+                
         assertTrue(result.isEmpty());
-        assertThat(result.getLog(), is(expectedLog));
         
     }
     

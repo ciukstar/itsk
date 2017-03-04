@@ -16,9 +16,9 @@ import org.xml.sax.InputSource;
  * @author sergiu
  */
 public class XMLParser {
-    private final AppLogger logger;
+    private final LogFormater logger;
 
-    public XMLParser(AppLogger logger) {
+    public XMLParser(LogFormater logger) {
         this.logger = logger;
     }
 

@@ -9,7 +9,7 @@ import su.jet.oim.utils.NotificationUtils;
  *
  * @author sergiu
  */
-public class AppLogger {
+public class LogFormater {
 
     String getShortStackTrace(String st, int line) {
         String[] split = st.split("\n");
