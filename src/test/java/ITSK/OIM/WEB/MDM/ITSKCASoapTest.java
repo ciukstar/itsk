@@ -47,6 +47,7 @@ public class ITSKCASoapTest {
     final String email = "ciukstar@yahoo.com";
     final String folderID = "c5619331-7426-e611-80ed-00505681c485";
     final String CAOIDemail = "1.2.840.113549.1.9.1";
+    
 
     @Test
     public void shouldGenerateAnEmptyResposeAndLogWhyTheUserWasNotFound() throws Exception {

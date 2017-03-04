@@ -24,23 +24,23 @@ public class UC {
     public UC(RegAuthLegacyService service) {
         this.service = service;
     }
-    
+
     Either<? extends Throwable, Map<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
         Holder<String> userRecordListHolder = new Holder<>();
         Holder<Integer> resultCountHolder = new Holder<>();
         Holder<Integer> totalRowCountHolder = new Holder<>();
         try {
             port.getUserRecordList(
-                    folderID, "", "", 
-                    Boolean.TRUE, 
-                    condFild, 
-                    condValue, 
-                    condOperator, 1, 100, 
-                    Boolean.TRUE, 
-                    userRecordListHolder, 
-                    resultCountHolder, 
+                    folderID, "", "",
+                    Boolean.TRUE,
+                    condFild,
+                    condValue,
+                    condOperator, 1, 100,
+                    Boolean.TRUE,
+                    userRecordListHolder,
+                    resultCountHolder,
                     totalRowCountHolder);
-            
+
             Map<String, Object> result = new HashMap<>();
             result.put("resultCount", resultCountHolder.value);
             result.put("getUserRecordListResult", userRecordListHolder.value);
@@ -50,7 +50,13 @@ public class UC {
         }
     }
 
-    public Either<? extends Throwable, Map<String, Object>> findUcUser(Map<String, Object> params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) {
+    public Either<? extends Throwable, Map<String, Object>> findUcUser(
+            Map<String, Object> params,
+            String folderID,
+            final RegAuthLegacyContract port,
+            UserAccountInfo accountInfo
+    ) {
+
         //Поск пользователя УЦ
         if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
             //Поск пользователя УЦ по UserID CA
@@ -58,7 +64,7 @@ public class UC {
             return findUserCA(folderID, "UserId", userId, 8, port);
         } else {
             //Поск пользователя УЦ по Email
-            return findUserCA(folderID, "OID." + CAOIDemail, email.trim(), 8, port);
+            return findUserCA(folderID, "OID." + accountInfo.CAOIDemail, accountInfo.email.trim(), 8, port);
         }
     }
 
@@ -90,7 +96,7 @@ public class UC {
                 URLStreamHandler handler = new Handler();
                 URL newEndpoint = new URL(null, params.get("CASoapServiceWSDLurl").toString(), handler);
                 QName qname = new QName("http://cryptopro.ru/pki/registration/service/2010/03", "RegAuthLegacyService");
-                
+
                 service.setUrl(newEndpoint);
                 service.setQn(qname);
                 port = service.getRegAuthLegacyServiceEndpoint();
@@ -107,5 +113,5 @@ public class UC {
             return Either.left(e);
         }
     }
-    
+
 }

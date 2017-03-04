@@ -56,16 +56,16 @@ public class ITSKCASoap {
 
     public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, Map<String, Object> params) {
 
-        final String folderID = Option.ofNullable((String) params.get("CAFolderID"))
-                .orElseGet("c5619331-7426-e611-80ed-00505681c485");
-        final char[] charPwd = Option.ofNullable((String) params.get("PasswordKeyStoreJCP"))
-                .orElseGet("Qwerty123").toCharArray();
-        final String CAOIDemail = Option.ofNullable((String) params.get("EMAIL"))
-                .orElseGet("1.2.840.113549.1.9.1");
-        final String caOIDUPN = Option.ofNullable((String) params.get("UPN"))
+        UserAccountInfo userAccount = new UserAccountInfo();
+        userAccount.caOIDUPN = Option.ofNullable((String) params.get("UPN"))
                 .orElseGet("1.3.6.1.4.1.311.20.2.3");
-        final String caOIDCN = Option.ofNullable((String) params.get("CN"))
+        userAccount.ADLogin = ADLogin;
+        userAccount.CAOIDemail = Option.ofNullable((String) params.get("EMAIL"))
+                .orElseGet("1.2.840.113549.1.9.1");
+        userAccount.email = email;
+        userAccount.caOIDCN = Option.ofNullable((String) params.get("CN"))
                 .orElseGet("2.5.4.3");
+        userAccount.fio = fio;
 
         ResponseITSKCASoap response = new ResponseITSKCASoap();
         response.appendLog(
@@ -77,24 +77,38 @@ public class ITSKCASoap {
         if (port.isEmpty()) {
             response.appendLog(logFormatter.logError(getStackTrace(port.getLeft()), this.getClass()));
         }
+        
+        final String folderID = Option.ofNullable((String) params.get("CAFolderID"))
+                .orElseGet("c5619331-7426-e611-80ed-00505681c485");
+        
+        
         //Поск пользователя УЦ
         final Either<? extends Throwable, Map<String, Object>> resultFindUserCA
-                = uc.findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
+                = uc.findUcUser(params, folderID, port.getRight(), userAccount);
 
         if (resultFindUserCA.isEmpty()) {
             response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
-            response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + CAOIDemail + "->" + email, this.getClass()));
+            response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + userAccount.CAOIDemail + "->" + userAccount.email, this.getClass()));
             response.setPropertyMap(emptyResult());
             return response;
         }
 
         if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
-            if (checkoutUser(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), response, email, port)) return response;
+            if (checkoutUser(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), response, email, port)) {
+                return response;
+            }
 
         }
 
         if ((int) resultFindUserCA.getRight().get("resultCount") <= 0) {
-            if (registerUser(response, email, caOIDUPN, ADLogin, CAOIDemail, caOIDCN, fio, charPwd, port, folderID)) return response;
+            response.appendLog(logFormatter.log("User not found, Email: " + email, this.getClass()));
+
+            final char[] charPwd = Option.ofNullable((String) params.get("PasswordKeyStoreJCP"))
+                .orElseGet("Qwerty123").toCharArray();
+            
+            if (registerUser(response, userAccount, charPwd, port, folderID)) {
+                return response;
+            }
         }
 
         response.setResult("SUCCESS");
@@ -180,16 +194,16 @@ public class ITSKCASoap {
         return false;
     }
 
-    boolean registerUser(ResponseITSKCASoap response, String email, final String caOIDUPN, String ADLogin, final String CAOIDemail, final String caOIDCN, String fio, final char[] charPwd, Either<? extends Throwable, RegAuthLegacyContract> port, final String folderID) {
-        response.appendLog(logFormatter.log("User not found, Email: " + email, this.getClass()));
-        //Сформировать запрос на регисрацию пользователя
-        final String request = "<ProfileAttributesChange> \n"
-                + "<To> \n"
-                + "<Attribute Oid=\"" + caOIDUPN + "\" Value=\"" + ADLogin + "\" /> \n"
-                + "<Attribute Oid=\"" + CAOIDemail + "\" Value=\"" + email + "\" /> \n"
-                + "<Attribute Oid=\"" + caOIDCN + "\" Value=\"" + fio + "\" /> \n"
-                + "</To> \n"
-                + "</ProfileAttributesChange> \n";
+    boolean registerUser(
+            ResponseITSKCASoap response,
+            UserAccountInfo userAccount,
+            final char[] charPwd,
+            Either<? extends Throwable, RegAuthLegacyContract> port,
+            final String folderID
+    ) {
+
+        String request = buildRequest(userAccount);
+
         response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + request, this.getClass()));
         final Either<? extends Throwable, Credentials> cred = credLoader.loadCredentials(charPwd);
         if (cred.isEmpty()) {
@@ -207,7 +221,7 @@ public class ITSKCASoap {
         final String keyPhrase = "key";
         final String description = "СУИД:Предоставление доступа в УЦ";
         final String managerComment = "СУИД:Предоставление доступа в УЦ";
-        final String resultSubmitAndAcceptRegRequest = port.getRight().submitAndAcceptRegRequest(folderID, resultSignRequestCABase64.getRight(), email, keyPhrase, description, managerComment, Boolean.FALSE);
+        final String resultSubmitAndAcceptRegRequest = port.getRight().submitAndAcceptRegRequest(folderID, resultSignRequestCABase64.getRight(), userAccount.email, keyPhrase, description, managerComment, Boolean.FALSE);
         //Получить описание запроса на регистрацию + получить UserID
         final String resultgetRegRequestRecord = port.getRight().getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
         //Парсинг результата поиска пользователя УЦ
@@ -254,13 +268,25 @@ public class ITSKCASoap {
                 && resultParseXML.getRight().size() == 1
                 && !resultParseXML.getRight().get(0).get(0).isEmpty()
                 && !resultCreateTokenForUser.isEmpty()) {
-            response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + email, this.getClass()));
+            response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + userAccount.email, this.getClass()));
             response.setResult("SUCCESS");
             response.addEntries(resultCreateTokenForUser.getRight());
             response.addEntry("UserId", resultParseXML.getRight().get(0).get(0));
             return true;
         }
         return false;
+    }
+
+    String buildRequest(UserAccountInfo account) {
+        //Сформировать запрос на регисрацию пользователя
+        final String request = "<ProfileAttributesChange> \n"
+                + "<To> \n"
+                + "<Attribute Oid=\"" + account.caOIDUPN + "\" Value=\"" + account.ADLogin + "\" /> \n"
+                + "<Attribute Oid=\"" + account.CAOIDemail + "\" Value=\"" + account.email + "\" /> \n"
+                + "<Attribute Oid=\"" + account.caOIDCN + "\" Value=\"" + account.fio + "\" /> \n"
+                + "</To> \n"
+                + "</ProfileAttributesChange> \n";
+        return request;
     }
 
     Option<String> findFirstActiveUser(final Either<? extends Throwable, List<List<String>>> resultParseXML) {
