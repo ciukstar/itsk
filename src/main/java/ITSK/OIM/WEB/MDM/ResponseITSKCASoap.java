@@ -44,6 +44,10 @@ public class ResponseITSKCASoap {
         this.propertyMap = parametrMap;
     }
 
+    public void addEntry(String key, Object value) {
+        this.propertyMap.put(key, value);
+    }
+    
     public boolean isEmpty() {
         return propertyMap.isEmpty();
     }
@@ -51,5 +55,9 @@ public class ResponseITSKCASoap {
     ResponseITSKCASoap appendLog(String msg) {
         this.log = this.log + msg;
         return this;
+    }
+
+    public void addEntries(HashMap<String, Object> entries) {
+        this.propertyMap.putAll(entries);
     }
 }
