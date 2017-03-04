@@ -113,42 +113,47 @@ public class ITSKCASoap {
                     response.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
                 }
 
-                if (resultParseXML.getRight().size() == 1 && resultParseXML.getRight().get(0).get(0).isEmpty()) {
+                if (resultParseXML.getRight().size() == 1
+                        && resultParseXML.getRight().get(0).get(0).isEmpty()) {
+
                     result.put("UserId", "");
                     response.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
                     response.setPropertyMap(result);
                     return response;
                 }
 
-                if (resultParseXML.getRight().size() == 1) {
+                if (resultParseXML.getRight().size() == 1
+                        && !resultParseXML.getRight().get(0).get(1).equals("A")) {
+                    response.appendLog(logFormatter.logError("Error: user" + email + "is not active status", this.getClass()));
+                    response.setPropertyMap(result);
+                    return response;
+                }
+
+                if (resultParseXML.getRight().size() == 1
+                        && resultParseXML.getRight().get(0).get(1).equals("A")) {
 
                     final String userId = resultParseXML.getRight().get(0).get(0);
-                    result.put("UserId", userId);
                     response.appendLog(logFormatter.log("User found, User ID: " + userId, this.getClass()));
+                    result.put("UserId", userId);
+                    //Создать маркер временного доступа для пользователя
+                    final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
 
-                    if (resultParseXML.getRight().get(0).get(1).equals("A")) {
-                        //Создать маркер временного доступа для пользователя
-                        final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
-                        if (!resultCreateTokenForUser.isEmpty()) {
-                            response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
+                    if (!resultCreateTokenForUser.isEmpty()) {
+                        response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
 
-                            response.setOutcome("SUCCESS");
-                            result.putAll(resultCreateTokenForUser);
-                            response.setPropertyMap(result);
-                            return response;
-
-                        } else {
-                            response.propertyMap = result;
-                            return response;
-                        }
+                        response.setOutcome("SUCCESS");
+                        result.putAll(resultCreateTokenForUser);
+                        response.setPropertyMap(result);
+                        return response;
 
                     } else {
-                        response.appendLog(logFormatter.logError("Error: user" + email + "is not active status", this.getClass()));
-                        response.propertyMap = result;
+                        response.setPropertyMap(result);
                         return response;
                     }
 
-                } else if (resultParseXML.getRight().size() > 1) {
+                }
+                
+                if (resultParseXML.getRight().size() > 1) {
                     String userId = "";
                     int j = 0;
                     for (int i = 0; i < resultParseXML.getRight().size(); i++) {
