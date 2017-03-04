@@ -13,6 +13,7 @@ import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import javax.xml.ws.Holder;
@@ -77,9 +78,6 @@ public class ITSKCASoap {
             webLogin.value = "";
             webPassword.value = "";
 
-            final List<String> parseAttrs = new ArrayList<>();
-            parseAttrs.add("UserId");
-
             response.appendLog(
                     logFormatter.log("Begin find user " + email + " in CA", this.getClass())
             );
@@ -103,88 +101,86 @@ public class ITSKCASoap {
 
             if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
                 //Дополнитьльно для парсинга добавляем статус пользователя
-                parseAttrs.add("Status");
                 //Парсинг результата поиска пользователя УЦ
-                final Pair<? extends Throwable, List<List<String>>> resultParseXML
-                        = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrs);
+                final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
+                        resultFindUserCA.getRight().get("getUserRecordListResult").toString(),
+                        Arrays.asList("UserId", "Status")
+                );
 
                 if (resultParseXML.isEmpty()) {
                     response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                } else {
+                    response.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
                 }
 
-                if (resultParseXML.getRight().size() > 0) {
-                    final List<List<String>> users = resultParseXML.getRight();
+                if (resultParseXML.getRight().size() == 1 && resultParseXML.getRight().get(0).get(0).isEmpty()) {
+                    result.put("UserId", "");
+                    response.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
+                    response.setPropertyMap(result);
+                    return response;
+                }
 
-                    response.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
+                if (resultParseXML.getRight().size() == 1) {
 
-                    if (users.size() == 1) {
-                        final String userId = users.get(0).get(0);
-                        result.put("UserId", userId);
-                        if (userId.isEmpty()) {
-                            response.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
-                            response.propertyMap = result;
+                    final String userId = resultParseXML.getRight().get(0).get(0);
+                    result.put("UserId", userId);
+                    response.appendLog(logFormatter.log("User found, User ID: " + userId, this.getClass()));
+
+                    if (resultParseXML.getRight().get(0).get(1).equals("A")) {
+                        //Создать маркер временного доступа для пользователя
+                        final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
+                        if (!resultCreateTokenForUser.isEmpty()) {
+                            response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
+
+                            response.setOutcome("SUCCESS");
+                            result.putAll(resultCreateTokenForUser);
+                            response.setPropertyMap(result);
                             return response;
-                        }
-
-                        response.appendLog(logFormatter.log("User found, User ID: " + userId, this.getClass()));
-
-                        if (users.get(0).get(1).equals("A")) {
-                            //Создать маркер временного доступа для пользователя
-                            final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
-                            if (!resultCreateTokenForUser.isEmpty()) {
-                                response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
-
-                                response.result = "SUCCESS";
-                                result.putAll(resultCreateTokenForUser);
-                                response.propertyMap = result;
-                                return response;
-
-                            } else {
-                                response.propertyMap = result;
-                                return response;
-                            }
 
                         } else {
-                            response.appendLog(logFormatter.logError("Error: user" + email + "is not active status", this.getClass()));
                             response.propertyMap = result;
                             return response;
                         }
 
                     } else {
-                        String userId = "";
-                        int j = 0;
-                        for (int i = 0; i < users.size(); i++) {
-                            if (users.get(i).get(1).equals("A")) {
-                                j = j + 1;
-                                userId = users.get(i).get(0);
-                                result.put("UserId", userId);
-                            }
+                        response.appendLog(logFormatter.logError("Error: user" + email + "is not active status", this.getClass()));
+                        response.propertyMap = result;
+                        return response;
+                    }
 
+                } else if (resultParseXML.getRight().size() > 1) {
+                    String userId = "";
+                    int j = 0;
+                    for (int i = 0; i < resultParseXML.getRight().size(); i++) {
+                        if (resultParseXML.getRight().get(i).get(1).equals("A")) {
+                            j = j + 1;
+                            userId = resultParseXML.getRight().get(i).get(0);
+                            result.put("UserId", userId);
                         }
-                        if (j == 1) {
 
-                            response.appendLog(logFormatter.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
+                    }
+                    if (j == 1) {
 
-                            //Создать маркер временного доступа для пользователя
-                            final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
-                            if (!resultCreateTokenForUser.isEmpty()) {
-                                response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
-                                response.result = "SUCCESS";
-                                result.putAll(resultCreateTokenForUser);
-                                response.propertyMap = result;
-                                return response;
-                            } else {
-                                response.propertyMap = result;
-                                return response;
-                            }
+                        response.appendLog(logFormatter.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
 
+                        //Создать маркер временного доступа для пользователя
+                        final HashMap resultCreateTokenForUser = createTokenForUser(port.getRight(), userId, webLogin, webPassword, response);
+                        if (!resultCreateTokenForUser.isEmpty()) {
+                            response.appendLog(logFormatter.log("Create Marker CA for user, User ID: " + userId + " Complite", this.getClass()));
+                            response.result = "SUCCESS";
+                            result.putAll(resultCreateTokenForUser);
+                            response.propertyMap = result;
+                            return response;
                         } else {
-                            //Ошибка, найдено больше одного пользователя
-                            response.appendLog(logFormatter.logError("Error: In CA found more than one active user for email" + email, this.getClass()));
                             response.propertyMap = result;
                             return response;
                         }
 
+                    } else {
+                        //Ошибка, найдено больше одного пользователя
+                        response.appendLog(logFormatter.logError("Error: In CA found more than one active user for email" + email, this.getClass()));
+                        response.propertyMap = result;
+                        return response;
                     }
 
                 }
@@ -221,9 +217,18 @@ public class ITSKCASoap {
                     final String resultgetRegRequestRecord = port.getRight().getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
 
                     //Парсинг результата поиска пользователя УЦ
+                    final List<String> parseAttrs = new ArrayList<>();
+                    parseAttrs.add("UserId");
                     final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
                     if (resultParseXML.isEmpty()) {
                         response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                    }
+
+                    if (resultParseXML.getRight().size() > 1) {
+                        //Ошибка, найдено больше одного пользователя
+                        response.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
+                        response.setPropertyMap(result);
+                        return response;
                     }
 
                     if (resultParseXML.getRight().size() == 1) {
@@ -234,7 +239,7 @@ public class ITSKCASoap {
 
                         if (userId.isEmpty()) {
                             response.appendLog(logFormatter.logError("Error in the create new CA user, Not parsing result find userID for RegRequest", this.getClass()));
-                            response.propertyMap = result;
+                            response.setPropertyMap(result);
                             return response;
                         } else {
                             //Создать маркер временного доступа для пользователя
@@ -243,8 +248,8 @@ public class ITSKCASoap {
                                 response.appendLog(logFormatter.log("Create Token for user: " + userId + " Email: " + email, this.getClass()));
 
                                 result.putAll(resultCreateTokenForUser);
-                                response.result = "SUCCESS";
-                                response.propertyMap = result;
+                                response.setResult("SUCCESS");
+                                response.setPropertyMap(result);
                                 return response;
 
                             } else {
@@ -252,28 +257,20 @@ public class ITSKCASoap {
                                 return response;
                             }
                         }
-                    } else {
-                        //Ошибка, найдено больше одного пользователя
-                        response.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
-                        response.propertyMap = result;
-                        return response;
                     }
 
                 }
             }
 
         } catch (Exception e) {
-            String ss = getStackTrace(e);
-            response.appendLog(logFormatter.logError(ss, this.getClass()));
-            //LOGGER.log(Level.SEVERE, "Error initialization CreateAccount", e);
-            response.propertyMap = result;
+            response.appendLog(logFormatter.logError(getStackTrace(e), this.getClass()));
+            response.setPropertyMap(result);
             return response;
-            //StringWriter sw = new StringWriter();
-            //e.printStackTrace(new PrintWriter(sw));
 
         }
-        response.result = "SUCCESS";
-        response.propertyMap = result;
+
+        response.setResult("SUCCESS");
+        response.setPropertyMap(result);
         return response;
     }
 

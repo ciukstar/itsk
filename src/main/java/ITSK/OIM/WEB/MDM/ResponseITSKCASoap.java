@@ -32,6 +32,10 @@ public class ResponseITSKCASoap {
         this.result = result;
     }
 
+    public void setOutcome(String value) {
+        setResult(value);
+    }
+    
     public HashMap getPropertyMap() {
         return propertyMap;
     }
