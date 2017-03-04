@@ -153,7 +153,7 @@ public class ITSKCASoap {
 
                 }
 
-                Option<String> userId = findAnyActiveUser(resultParseXML);
+                Option<String> userId = findFirstActiveUser(resultParseXML);
 
                 if (resultParseXML.getRight().size() > 1
                         && userId.isEmpty()) {
@@ -288,7 +288,7 @@ public class ITSKCASoap {
 
     }
 
-    Option<String> findAnyActiveUser(final Pair<? extends Throwable, List<List<String>>> resultParseXML) {
+    Option<String> findFirstActiveUser(final Pair<? extends Throwable, List<List<String>>> resultParseXML) {
         int j = 0;
         for (int i = 0; i < resultParseXML.getRight().size(); i++) {
             if (resultParseXML.getRight().get(i).get(1).equals("A")) {
