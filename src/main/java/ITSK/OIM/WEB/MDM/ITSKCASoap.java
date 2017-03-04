@@ -53,21 +53,18 @@ public class ITSKCASoap {
         this.parser = parser;
     }
 
-    public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap params) {
+    public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap<String, Object> params) {
 
-        //System.getProperties().put("https.proxyHost","www-proxy.idc.myproxy.com");
-        //System.getProperties().put("https.proxyPort", "80");
-        //OperationResult result = null;
-        //String folderID = Params.get("CAFolderID").toString();
-        String folderID = "c5619331-7426-e611-80ed-00505681c485";
-        //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
-        char[] charPwd = new char[]{'Q', 'w', 'e', 'r', 't', 'y', '1', '2', '3'};
-        //String CAOIDemail = Params.get("EMAIL").toString();
-        String CAOIDemail = "1.2.840.113549.1.9.1";
-        //String CAOIDemail = Params.get("UPN").toString();
-        String caOIDUPN = "1.3.6.1.4.1.311.20.2.3";
-        //String CAOIDemail = Params.get("CN").toString();
-        String caOIDCN = "2.5.4.3";
+        final String folderID = Option.ofNullable((String) params.get("CAFolderID"))
+                .orElseGet("c5619331-7426-e611-80ed-00505681c485");
+        final char[] charPwd = Option.ofNullable((String) params.get("PasswordKeyStoreJCP"))
+                .orElseGet("Qwerty123").toCharArray();
+        final String CAOIDemail = Option.ofNullable((String) params.get("EMAIL"))
+                .orElseGet("1.2.840.113549.1.9.1");
+        final String caOIDUPN = Option.ofNullable((String) params.get("UPN"))
+                .orElseGet("1.3.6.1.4.1.311.20.2.3");
+        final String caOIDCN = Option.ofNullable((String) params.get("CN"))
+                .orElseGet("2.5.4.3");
 
         ResponseITSKCASoap response = new ResponseITSKCASoap();
         response.appendLog(
