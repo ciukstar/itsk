@@ -80,12 +80,12 @@ public class ITSKCASoap {
         );
 
         //Инициализировать подключение к УЦ
-        Pair<? extends Throwable, RegAuthLegacyContract> port = uc.initializeCA(params);
+        Either<? extends Throwable, RegAuthLegacyContract> port = uc.initializeCA(params);
         if (port.isEmpty()) {
             response.appendLog(logFormatter.logError(getStackTrace(port.getLeft()), this.getClass()));
         }
         //Поск пользователя УЦ
-        final Pair<? extends Throwable, HashMap<String, Object>> resultFindUserCA
+        final Either<? extends Throwable, HashMap<String, Object>> resultFindUserCA
                 = uc.findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
 
         if (resultFindUserCA.isEmpty()) {
@@ -99,7 +99,7 @@ public class ITSKCASoap {
         if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
             //Дополнитьльно для парсинга добавляем статус пользователя
             //Парсинг результата поиска пользователя УЦ
-            final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
+            final Either<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
                     resultFindUserCA.getRight().get("getUserRecordListResult").toString(),
                     Arrays.asList("UserId", "Status")
             );
@@ -129,7 +129,7 @@ public class ITSKCASoap {
             response.appendLog(logFormatter.log("User found, User ID: " + usrid, this.getClass()));
 
             //Создать маркер временного доступа для пользователя
-            final Pair<? extends Throwable, HashMap> userToken = createTokenForUser(port.getRight(), usrid, webLogin, webPassword, response);
+            final Either<? extends Throwable, HashMap> userToken = createTokenForUser(port.getRight(), usrid, webLogin, webPassword, response);
             if (userToken.isEmpty()) {
                 response.appendLog(logFormatter.logError(getStackTrace(userToken.getLeft()), this.getClass()));
             }
@@ -165,7 +165,7 @@ public class ITSKCASoap {
 
             response.appendLog(logFormatter.log("Found one active user CA for user email: " + email + "User ID:" + userId, this.getClass()));
             //Создать маркер временного доступа для пользователя
-            final Pair<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), userId.get(), webLogin, webPassword, response);
+            final Either<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), userId.get(), webLogin, webPassword, response);
             if (resultCreateTokenForUser.isEmpty()) {
                 response.appendLog(logFormatter.logError(getStackTrace(resultCreateTokenForUser.getLeft()), this.getClass()));
             }
@@ -204,13 +204,13 @@ public class ITSKCASoap {
 
             response.appendLog(logFormatter.log("Request for create user CA complite, Request: \n" + request, this.getClass()));
 
-            final Pair<? extends Throwable, Pair<PrivateKey, X509Certificate>> cred = credLoader.loadCredentials(charPwd);
+            final Either<? extends Throwable, Either<PrivateKey, X509Certificate>> cred = credLoader.loadCredentials(charPwd);
             if (cred.isEmpty()) {
                 response.appendLog(logFormatter.logError("Error while loding credentials", this.getClass()));
                 return response;
             }
             //Подписать запрос
-            final Pair<? extends Throwable, String> resultSignRequestCABase64 = signRequestCA(request, cred.getRight().getLeft(), cred.getRight().getRight(), response);
+            final Either<? extends Throwable, String> resultSignRequestCABase64 = signRequestCA(request, cred.getRight().getLeft(), cred.getRight().getRight(), response);
 
             if (resultSignRequestCABase64.isEmpty()) {
                 response.appendLog(logFormatter.logError(getStackTrace(resultSignRequestCABase64.getLeft()), this.getClass()));
@@ -230,7 +230,7 @@ public class ITSKCASoap {
             //Парсинг результата поиска пользователя УЦ
             final List<String> parseAttrs = new ArrayList<>();
             parseAttrs.add("UserId");
-            final Pair<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
+            final Either<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
 
             if (!resultSignRequestCABase64.isEmpty()
                     && resultParseXML.isEmpty()) {
@@ -259,7 +259,7 @@ public class ITSKCASoap {
             }
 
             //Создать маркер временного доступа для пользователя
-            final Pair<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), resultParseXML.getRight().get(0).get(0), webLogin, webPassword, response);
+            final Either<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port.getRight(), resultParseXML.getRight().get(0).get(0), webLogin, webPassword, response);
 
             if (resultCreateTokenForUser.isEmpty()) {
                 response.appendLog(logFormatter.logError(getStackTrace(resultCreateTokenForUser.getLeft()), this.getClass()));
@@ -294,7 +294,7 @@ public class ITSKCASoap {
 
     }
 
-    Option<String> findFirstActiveUser(final Pair<? extends Throwable, List<List<String>>> resultParseXML) {
+    Option<String> findFirstActiveUser(final Either<? extends Throwable, List<List<String>>> resultParseXML) {
         int j = 0;
         for (int i = 0; i < resultParseXML.getRight().size(); i++) {
             if (resultParseXML.getRight().get(i).get(1).equals("A")) {
@@ -305,7 +305,7 @@ public class ITSKCASoap {
         return Option.empty();
     }
 
-    public Pair<? extends Throwable, HashMap> createTokenForUser(
+    public Either<? extends Throwable, HashMap> createTokenForUser(
             RegAuthLegacyContract port,
             String userID,
             Holder<String> webLogin,
@@ -318,9 +318,9 @@ public class ITSKCASoap {
             port.createTokenForUser(userID, webLogin, webPassword);
             result.put("webLogin", webLogin.value);
             result.put("webPassword", webPassword.value);
-            return Pair.right(result);
+            return Either.right(result);
         } catch (Exception e) {
-            return Pair.left(e);
+            return Either.left(e);
         }
     }
 
@@ -331,7 +331,7 @@ public class ITSKCASoap {
 
         try {
 
-            Pair<? extends Throwable, RegAuthLegacyContract> port = null;
+            Either<? extends Throwable, RegAuthLegacyContract> port = null;
 
             //String folderID = Params.get("CAFolderID").toString();
             String folderID = "c5619331-7426-e611-80ed-00505681c485";
@@ -351,11 +351,11 @@ public class ITSKCASoap {
             Holder<Integer> resultCount = new Holder<>();
             Holder<Integer> totalRowCount = new Holder<>();
             String resultSubmitAndAcceptRevReques = "";
-            Pair<? extends Throwable, String> resultSignRequestCABase64;
-            Pair<? extends Throwable, HashMap<String, Object>> ResultFindUserCA;
+            Either<? extends Throwable, String> resultSignRequestCABase64;
+            Either<? extends Throwable, HashMap<String, Object>> ResultFindUserCA;
             String CAuserID = "";
             //Email = "Andrianov.IA@gazprom-neft.ru";//"Moskvichev.IA@Gazprom-Neft.RU";
-            Pair<? extends Throwable, List<List<String>>> resultParseXML;
+            Either<? extends Throwable, List<List<String>>> resultParseXML;
             List<String> parseAttrsCert = new ArrayList<>();
             List<String> parseAttrsUsr = new ArrayList<>();
             parseAttrsCert.add("SerialNumber");
@@ -583,7 +583,7 @@ public class ITSKCASoap {
         }
     }
 
-    public Pair<? extends Throwable, String> signRequestCA(
+    public Either<? extends Throwable, String> signRequestCA(
             String StrRequest,
             PrivateKey privateKey,
             X509Certificate cert,
@@ -608,9 +608,9 @@ public class ITSKCASoap {
             res = createCMS(res, keys, certs, false);
             ru.CryptoPro.JCP.tools.Encoder encoder = new ru.CryptoPro.JCP.tools.Encoder();
             String resBase64String = encoder.encode(res);
-            return Pair.right(resBase64String);
+            return Either.right(resBase64String);
         } catch (Exception e) {
-            return Pair.left(e);
+            return Either.left(e);
         }
     }
 

@@ -26,7 +26,7 @@ public class UC {
         this.service = service;
     }
     
-    Pair<? extends Throwable, HashMap<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
+    Either<? extends Throwable, HashMap<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
         Holder<String> getUserRecordListResult = new Holder<>();
         Holder<Integer> resultCount = new Holder<>();
         Holder<Integer> totalRowCount = new Holder<>();
@@ -35,13 +35,13 @@ public class UC {
             port.getUserRecordList(folderID, "", "", Boolean.TRUE, condFild, condValue, condOperator, 1, 100, Boolean.TRUE, getUserRecordListResult, resultCount, totalRowCount);
             result.put("resultCount", resultCount.value);
             result.put("getUserRecordListResult", getUserRecordListResult.value);
-            return Pair.right(result);
+            return Either.right(result);
         } catch (Exception e) {
-            return Pair.left(e);
+            return Either.left(e);
         }
     }
 
-    public Pair<? extends Throwable, HashMap<String, Object>> findUcUser(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) {
+    public Either<? extends Throwable, HashMap<String, Object>> findUcUser(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) {
         //Поск пользователя УЦ
         if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
             //Поск пользователя УЦ по UserID CA
@@ -53,7 +53,7 @@ public class UC {
         }
     }
 
-    public Pair<? extends Throwable, RegAuthLegacyContract> initializeCA(HashMap<String, Object> params) {
+    public Either<? extends Throwable, RegAuthLegacyContract> initializeCA(HashMap<String, Object> params) {
         RegAuthLegacyContract port = null;
         try {
             //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
@@ -93,9 +93,9 @@ public class UC {
             //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.connect.timeout", 60000);
             //Устанавливаем таймаут запроса
             //((BindingProvider)port).getRequestContext().put("com.sun.xml.ws.request.timeout", 30000);
-            return Pair.right(port);
+            return Either.right(port);
         } catch (MalformedURLException e) {
-            return Pair.left(e);
+            return Either.left(e);
         }
     }
     

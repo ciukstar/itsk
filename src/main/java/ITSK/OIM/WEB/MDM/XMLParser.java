@@ -21,7 +21,7 @@ import org.xml.sax.SAXException;
  */
 public class XMLParser {
 
-    public Pair<? extends Throwable, List<List<String>>> parseXML(String XMLString, List<String> elems) {
+    public Either<? extends Throwable, List<List<String>>> parseXML(String XMLString, List<String> elems) {
         try {
             List<String> resultStr = new ArrayList<>();
             List<List<String>> result = new ArrayList<>();
@@ -51,9 +51,9 @@ public class XMLParser {
                 resultStr = Arrays.asList(listStrElems.get(i).split("\\|\\|"));
                 result.add(i, resultStr);
             }
-            return Pair.right(result);
+            return Either.right(result);
         } catch (IOException | DOMException | SAXException | ParserConfigurationException e) {
-            return Pair.left(e);
+            return Either.left(e);
         }
     }
 

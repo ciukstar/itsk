@@ -29,7 +29,7 @@ public class UCTest {
     
     @Test
     public void testSomeMethod() {
-        Pair<? extends Throwable, RegAuthLegacyContract> result = uc.initializeCA(new HashMap<String, Object>());
+        Either<? extends Throwable, RegAuthLegacyContract> result = uc.initializeCA(new HashMap<String, Object>());
     }
     
 }
