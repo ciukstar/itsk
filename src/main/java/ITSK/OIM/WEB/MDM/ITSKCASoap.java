@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.xml.ws.Holder;
 import ru.CryptoPro.JCP.JCP;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CMSVersion;
@@ -53,7 +54,7 @@ public class ITSKCASoap {
         this.parser = parser;
     }
 
-    public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, HashMap<String, Object> params) {
+    public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, Map<String, Object> params) {
 
         final String folderID = Option.ofNullable((String) params.get("CAFolderID"))
                 .orElseGet("c5619331-7426-e611-80ed-00505681c485");
@@ -77,7 +78,7 @@ public class ITSKCASoap {
             response.appendLog(logFormatter.logError(getStackTrace(port.getLeft()), this.getClass()));
         }
         //Поск пользователя УЦ
-        final Either<? extends Throwable, HashMap<String, Object>> resultFindUserCA
+        final Either<? extends Throwable, Map<String, Object>> resultFindUserCA
                 = uc.findUcUser(params, folderID, port.getRight(), CAOIDemail, email);
 
         if (resultFindUserCA.isEmpty()) {
@@ -353,7 +354,7 @@ public class ITSKCASoap {
             Holder<Integer> totalRowCount = new Holder<>();
             String resultSubmitAndAcceptRevReques = "";
             Either<? extends Throwable, String> resultSignRequestCABase64;
-            Either<? extends Throwable, HashMap<String, Object>> ResultFindUserCA;
+            Either<? extends Throwable, Map<String, Object>> resultFindUserCA;
             String CAuserID = "";
             //Email = "Andrianov.IA@gazprom-neft.ru";//"Moskvichev.IA@Gazprom-Neft.RU";
             Either<? extends Throwable, List<List<String>>> resultParseXML;
@@ -382,15 +383,15 @@ public class ITSKCASoap {
                 result.put("UserId", UserID);
 
                 //Поск пользователя УЦ
-                ResultFindUserCA = uc.findUserCA(folderID, "UserId", UserID, 8, port.getRight());
-                if (ResultFindUserCA.isEmpty()) {
-                    response.appendLog(logFormatter.logError(getStackTrace(ResultFindUserCA.getLeft()), this.getClass()));
+                resultFindUserCA = uc.findUserCA(folderID, "UserId", UserID, 8, port.getRight());
+                if (resultFindUserCA.isEmpty()) {
+                    response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
                     FlagFindEmail = 1;
 
-                } else if ((int) ResultFindUserCA.getRight().get("resultCount") > 0) {
+                } else if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
                     response.appendLog(logFormatter.log("Find user " + UserID + " in CA", this.getClass()));
 
-                    if (ResultFindUserCA.getRight().get("resultCount").equals(1)) {
+                    if (resultFindUserCA.getRight().get("resultCount").equals(1)) {
                         //Получить список сертификатов пользователя УЦ
                         port.getRight().getCertificateRecordList(folderID, "V", "", Boolean.TRUE, "UserId", UserID, 8, 1, 100, Boolean.TRUE, getCertificateRecordListResult, resultCount, totalRowCount);
                         if (resultCount.value > 0) {
@@ -433,19 +434,19 @@ public class ITSKCASoap {
             }
 
             if (FlagFindEmail == 1) {
-                ResultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port.getRight());
-                if (ResultFindUserCA.isEmpty()) {
-                    response.appendLog(logFormatter.logError(getStackTrace(ResultFindUserCA.getLeft()), this.getClass()));
+                resultFindUserCA = uc.findUserCA(folderID, "OID." + CAOIDemail, Email.trim(), 8, port.getRight());
+                if (resultFindUserCA.isEmpty()) {
+                    response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
                     response.appendLog(logFormatter.logError("Error in process find CA user, filter:" + CAOIDemail + "->" + Email, this.getClass()));
                     response.propertyMap = result;
                     return response;
 
-                } else if ((int) ResultFindUserCA.getRight().get("resultCount") > 0) {
+                } else if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
 
-                    if (ResultFindUserCA.getRight().get("resultCount").equals(1)) {
+                    if (resultFindUserCA.getRight().get("resultCount").equals(1)) {
                         response.appendLog(logFormatter.log("Find user for email" + Email + " in CA", this.getClass()));
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parser.parseXML(ResultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr);
 
                         if (resultParseXML.isEmpty()) {
                             response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
@@ -512,7 +513,7 @@ public class ITSKCASoap {
                         parseAttrsUsr.add("Status");
 
                         //Парсинг результата поиска пользователя УЦ
-                        resultParseXML = parser.parseXML(ResultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr);
+                        resultParseXML = parser.parseXML(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), parseAttrsUsr);
                         if (resultParseXML.isEmpty()) {
                             response.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
                         }

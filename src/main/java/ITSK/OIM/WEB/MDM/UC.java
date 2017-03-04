@@ -7,6 +7,7 @@ import java.net.URL;
 import java.net.URLStreamHandler;
 import java.security.Security;
 import java.util.HashMap;
+import java.util.Map;
 import javax.xml.namespace.QName;
 import javax.xml.ws.Holder;
 import ru.CryptoPro.JCP.JCP;
@@ -18,19 +19,17 @@ import sun.net.www.protocol.https.Handler;
  */
 public class UC {
 
-    private final LogFormater logger;
     private final RegAuthLegacyService service;
 
-    public UC(LogFormater logger, RegAuthLegacyService service) {
-        this.logger = logger;
+    public UC(RegAuthLegacyService service) {
         this.service = service;
     }
     
-    Either<? extends Throwable, HashMap<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
+    Either<? extends Throwable, Map<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
         Holder<String> getUserRecordListResult = new Holder<>();
         Holder<Integer> resultCount = new Holder<>();
         Holder<Integer> totalRowCount = new Holder<>();
-        HashMap<String, Object> result = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         try {
             port.getUserRecordList(folderID, "", "", Boolean.TRUE, condFild, condValue, condOperator, 1, 100, Boolean.TRUE, getUserRecordListResult, resultCount, totalRowCount);
             result.put("resultCount", resultCount.value);
@@ -41,7 +40,7 @@ public class UC {
         }
     }
 
-    public Either<? extends Throwable, HashMap<String, Object>> findUcUser(HashMap params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) {
+    public Either<? extends Throwable, Map<String, Object>> findUcUser(Map<String, Object> params, String folderID, final RegAuthLegacyContract port, String CAOIDemail, String email) {
         //Поск пользователя УЦ
         if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
             //Поск пользователя УЦ по UserID CA
@@ -53,7 +52,7 @@ public class UC {
         }
     }
 
-    public Either<? extends Throwable, RegAuthLegacyContract> initializeCA(HashMap<String, Object> params) {
+    public Either<? extends Throwable, RegAuthLegacyContract> initializeCA(Map<String, Object> params) {
         RegAuthLegacyContract port = null;
         try {
             //char[] charPwd = Params.get("PasswordKeyStoreJCP").toString().toCharArray();
