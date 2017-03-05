@@ -23,6 +23,7 @@ public class ResponseITSKCASoap implements Response {
         this.propertyMap = new HashMap();
     }
 
+    @Override
     public String getLog() {
         return log;
     }
@@ -31,6 +32,7 @@ public class ResponseITSKCASoap implements Response {
         this.log = log;
     }
 
+    @Override
     public String getResult() {
         return result;
     }
@@ -67,5 +69,15 @@ public class ResponseITSKCASoap implements Response {
 
     public void addEntries(HashMap<String, Object> entries) {
         this.propertyMap.putAll(entries);
+    }
+
+    @Override
+    public Map<String, Object> getProps() {
+        return propertyMap;
+    }
+
+    @Override
+    public Outcome getOutcome() {
+        return Outcome.valueOf(getResult());
     }
 }
