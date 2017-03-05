@@ -9,7 +9,7 @@ import java.util.HashMap;
 public class ResponseITSKCASoap {
 
     private final HashMap propertyMap;
-    String log = "";
+    private String log = "";
     String result = "ERROR";
 
     public ResponseITSKCASoap() {
