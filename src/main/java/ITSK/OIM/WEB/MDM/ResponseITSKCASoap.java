@@ -10,7 +10,7 @@ public class ResponseITSKCASoap {
 
     private final HashMap propertyMap;
     private String log = "";
-    String result = "ERROR";
+    private String result = "ERROR";
 
     public ResponseITSKCASoap() {
         this.propertyMap = new HashMap();

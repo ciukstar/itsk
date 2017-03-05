@@ -398,7 +398,7 @@ public class ITSKCASoap {
                         } else {
                             response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                         }
-                        response.result = "SUCCESS";
+                        response.setResult("SUCCESS");
                         response.setPropertyMap(result);
                         return response;
 
@@ -471,7 +471,7 @@ public class ITSKCASoap {
                                 response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                             }
 
-                            response.result = "SUCCESS";
+                            response.setResult("SUCCESS");
                             response.setPropertyMap(result);
                             return response;
 
@@ -529,7 +529,7 @@ public class ITSKCASoap {
                                 } else {
                                     response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                                 }
-                                response.result = "SUCCESS";
+                                response.setResult("SUCCESS");
                                 response.setPropertyMap(result);
                                 return response;
 
