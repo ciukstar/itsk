@@ -1,5 +1,6 @@
 package ITSK.OIM.WEB.MDM;
 
+import ITSK.OIM.WEB.GEN.RegAuthLegacyService;
 import com.objsys.asn1j.runtime.Asn1BerDecodeBuffer;
 import com.objsys.asn1j.runtime.Asn1BerEncodeBuffer;
 import com.objsys.asn1j.runtime.Asn1Null;
@@ -7,6 +8,8 @@ import com.objsys.asn1j.runtime.Asn1ObjectIdentifier;
 import com.objsys.asn1j.runtime.Asn1OctetString;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
+import java.net.URLStreamHandler;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Signature;
@@ -17,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.xml.namespace.QName;
 import javax.xml.ws.Holder;
 import ru.CryptoPro.JCP.JCP;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.CMSVersion;
@@ -35,6 +39,7 @@ import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.SignerInfo;
 import ru.CryptoPro.JCP.ASN.CryptographicMessageSyntax.SignerInfos;
 import ru.CryptoPro.JCP.ASN.PKIX1Explicit88.CertificateSerialNumber;
 import ru.CryptoPro.JCP.params.OID;
+import sun.net.www.protocol.https.Handler;
 
 /**
  *
@@ -52,6 +57,10 @@ public class ITSKCASoap {
         this.uc = uc;
         this.logFormatter = logFormatter;
         this.parser = parser;
+    }
+
+    public ITSKCASoap(RegAuthLegacyService service) {
+        this(new CredLoader(), new UC(service), new LogFormater(), new XMLParser());
     }
 
     public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, Map<String, Object> params) {
