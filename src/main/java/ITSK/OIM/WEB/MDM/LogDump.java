@@ -31,7 +31,12 @@ public class LogDump {
     public void appendLog(String log) {
         this.acc.append(log);
     }
-    public String getLog() {
+    public String getLogs() {
         return acc.toString();
+    }
+    public String popLog() {
+        String log = acc.toString();
+        acc.setLength(0);
+        return log;
     }
 }

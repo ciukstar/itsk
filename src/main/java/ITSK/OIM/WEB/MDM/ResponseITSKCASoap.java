@@ -8,18 +8,18 @@ import java.util.Map;
  * @author birillo
  */
 public class ResponseITSKCASoap implements Response {
-
+    
     private final Map<String, Object> propertyMap;
     private String log = "";
-    private String result = "ERROR";
+    private Outcome type;
 
-    ResponseITSKCASoap(Map<String, Object> props, String log, String type) {
+    ResponseITSKCASoap(Map<String, Object> props, String log, Outcome type) {
         this.propertyMap = props;
         this.log = log;
-        this.result = type;
+        this.type = type;
     }
 
-    public ResponseITSKCASoap() {
+    ResponseITSKCASoap() {
         this.propertyMap = new HashMap();
     }
 
@@ -34,11 +34,11 @@ public class ResponseITSKCASoap implements Response {
 
     @Override
     public String getResult() {
-        return result;
+        return type.name();
     }
 
     public void setResult(String result) {
-        this.result = result;
+        this.type = Outcome.valueOf(result);
     }
 
     public void setOutcome(String value) {
