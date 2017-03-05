@@ -17,6 +17,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import static java.util.Arrays.asList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,21 +86,23 @@ public class ITSKCASoap {
         }
 
         //Поск пользователя УЦ
-        final Either<? extends Throwable, Map<String, Object>> resultFindUserCA
+        final Either<? extends Throwable, Map<String, Object>> userInfo
                 = uc.findUcUser(params, port.getRight(), userAccountInfo);
 
-        if (resultFindUserCA.isEmpty()) {
-            dump.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
+        if (userInfo.isEmpty()) {
+            
+            dump.appendLog(logFormatter.logError(getStackTrace(userInfo.getLeft()), this.getClass()));
             dump.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + userAccountInfo.getCAOIDemail() + "->" + userAccountInfo.getEmail(), this.getClass()));
+            
             return (ResponseITSKCASoap) ResponseBuilder.instance().noProps()
                     .addLog(dump.popLog()).noMoreLogs().buildErrorResponse();
         }
 
-        if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
-            return checkoutUser(resultFindUserCA.getRight().get("getUserRecordListResult").toString(), email, port.getRight());
+        if ((int) userInfo.getRight().get("resultCount") > 0) {
+            return checkoutUser(userInfo.getRight().get("getUserRecordListResult").toString(), email, port.getRight());
         }
 
-        if ((int) resultFindUserCA.getRight().get("resultCount") <= 0) {
+        if ((int) userInfo.getRight().get("resultCount") <= 0) {
             dump.appendLog(logFormatter.log("User not found, Email: " + email, this.getClass()));
 
             final char[] charPwd = Option.ofNullable((String) params.get("PasswordKeyStoreJCP"))
@@ -116,17 +119,18 @@ public class ITSKCASoap {
 
     ResponseITSKCASoap checkoutUser(String getUserRecordListResult, String email, RegAuthLegacyContract port) {
         LogDump dump = LogDump.instance();
+        
         //Дополнитьльно для парсинга добавляем статус пользователя
         //Парсинг результата поиска пользователя УЦ
-        final Either<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(
-                getUserRecordListResult,
-                Arrays.asList("UserId", "Status")
-        );
+        final Either<? extends Throwable, List<List<String>>> resultParseXML 
+                = parser.parseXML(getUserRecordListResult, asList("UserId", "Status"));
+        
         if (resultParseXML.isEmpty()) {
             dump.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
         } else {
             dump.appendLog(logFormatter.log("Parsing result search user " + email + " complite", this.getClass()));
         }
+        
         if (resultParseXML.getRight().size() == 1
                 && resultParseXML.getRight().get(0).get(0).isEmpty()) {
             dump.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
@@ -239,27 +243,27 @@ public class ITSKCASoap {
         //Парсинг результата поиска пользователя УЦ
         final List<String> parseAttrs = new ArrayList<>();
         parseAttrs.add("UserId");
-        final Either<? extends Throwable, List<List<String>>> resultParseXML = parser.parseXML(resultgetRegRequestRecord, parseAttrs);
+        final Either<? extends Throwable, List<User>> registeredUsers = parser.extractUsers(resultgetRegRequestRecord, parseAttrs);
         if (!resultSignRequestCABase64.isEmpty()
-                && resultParseXML.isEmpty()) {
-            dump.appendLog(logFormatter.logError(getStackTrace(resultParseXML.getLeft()), this.getClass()));
+                && registeredUsers.isEmpty()) {
+            dump.appendLog(logFormatter.logError(getStackTrace(registeredUsers.getLeft()), this.getClass()));
         }
         if (!resultSignRequestCABase64.isEmpty()
-                && resultParseXML.getRight().size() > 1) {
+                && registeredUsers.getRight().size() > 1) {
             //Ошибка, найдено больше одного пользователя
             dump.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
             //Сохранить результат submitAndAcceptRegRequest (номер запроса)
             return (ResponseITSKCASoap) ResponseBuilder.instance().addProp("RegID", resultSubmitAndAcceptRegRequest)
                     .noMoreProps().addLog(dump.popLog()).noMoreLogs().buildErrorResponse();
         }
-        dump.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + resultParseXML.getRight().get(0).get(0), this.getClass()));
+        dump.appendLog(logFormatter.log("User register in CA, RegID: " + resultSubmitAndAcceptRegRequest + " ,UserID: " + registeredUsers.getRight().get(0).getId(), this.getClass()));
         if (!resultSignRequestCABase64.isEmpty()
-                && resultParseXML.getRight().size() == 1
-                && resultParseXML.getRight().get(0).get(0).isEmpty()) {
+                && registeredUsers.getRight().size() == 1
+                && registeredUsers.getRight().get(0).getId().isEmpty()) {
             dump.appendLog(logFormatter.logError("Error in the create new CA user, Not parsing result find userID for RegRequest", this.getClass()));
 
             return (ResponseITSKCASoap) ResponseBuilder.instance()
-                    .addProp("UserId", resultParseXML.getRight().get(0).get(0))
+                    .addProp("UserId", registeredUsers.getRight().get(0).getId())
                     .noMoreProps().addLog(dump.popLog()).noMoreLogs().buildErrorResponse();
         }
         final Holder<String> webLogin = new Holder<>();
@@ -267,7 +271,7 @@ public class ITSKCASoap {
         webLogin.value = "";
         webPassword.value = "";
         //Создать маркер временного доступа для пользователя
-        final Either<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port, resultParseXML.getRight().get(0).get(0), webLogin, webPassword);
+        final Either<? extends Throwable, HashMap> resultCreateTokenForUser = createTokenForUser(port, registeredUsers.getRight().get(0).getId(), webLogin, webPassword);
         if (resultCreateTokenForUser.isEmpty()) {
 
             dump.appendLog(logFormatter.logError(getStackTrace(resultCreateTokenForUser.getLeft()), this.getClass()));
@@ -275,22 +279,22 @@ public class ITSKCASoap {
                     .noMoreLogs().buildErrorResponse();
         }
         if (!resultSignRequestCABase64.isEmpty()
-                && resultParseXML.getRight().size() == 1
-                && !resultParseXML.getRight().get(0).get(0).isEmpty()
+                && registeredUsers.getRight().size() == 1
+                && !registeredUsers.getRight().get(0).getId().isEmpty()
                 && resultCreateTokenForUser.isEmpty()) {
 
             return (ResponseITSKCASoap) ResponseBuilder.instance()
                     .noProps().noLogs().buildErrorResponse();
         }
         if (!resultSignRequestCABase64.isEmpty()
-                && resultParseXML.getRight().size() == 1
-                && !resultParseXML.getRight().get(0).get(0).isEmpty()
+                && registeredUsers.getRight().size() == 1
+                && !registeredUsers.getRight().get(0).getId().isEmpty()
                 && !resultCreateTokenForUser.isEmpty()) {
-            dump.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + userAccount.getEmail(), this.getClass()));
+            dump.appendLog(logFormatter.log("Create Token for user: " + registeredUsers.getRight().get(0).getId() + " Email: " + userAccount.getEmail(), this.getClass()));
 
             return (ResponseITSKCASoap) ResponseBuilder.instance()
                     .addAllProps(resultCreateTokenForUser.getRight())
-                    .addProp("UserId", resultParseXML.getRight().get(0).get(0))
+                    .addProp("UserId", registeredUsers.getRight().get(0).getId())
                     .noMoreProps().addLog(dump.popLog()).noMoreLogs().buildSuccessResponse();
         }
         throw new AssertionError("Unhandled");

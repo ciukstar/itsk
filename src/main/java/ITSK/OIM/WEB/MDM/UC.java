@@ -24,8 +24,14 @@ public class UC {
     public UC(RegAuthLegacyService service) {
         this.service = service;
     }
-
-    Either<? extends Throwable, Map<String, Object>> findUserCA(String folderID, String condFild, String condValue, int condOperator, RegAuthLegacyContract port) {
+    
+    Either<? extends Throwable, Map<String, Object>> findUserCA(
+            String folderID, 
+            String condFild, 
+            String condValue, 
+            int condOperator, 
+            RegAuthLegacyContract port
+    ) {
         Holder<String> userRecordListHolder = new Holder<>();
         Holder<Integer> resultCountHolder = new Holder<>();
         Holder<Integer> totalRowCountHolder = new Holder<>();
