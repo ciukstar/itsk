@@ -56,16 +56,13 @@ public class ITSKCASoap {
 
     public ResponseITSKCASoap createUser(String email, String ADLogin, String fio, Map<String, Object> params) {
 
-        UserAccountInfo userAccount = new UserAccountInfo();
-        userAccount.caOIDUPN = Option.ofNullable((String) params.get("UPN"))
-                .orElseGet("1.3.6.1.4.1.311.20.2.3");
-        userAccount.ADLogin = ADLogin;
-        userAccount.CAOIDemail = Option.ofNullable((String) params.get("EMAIL"))
-                .orElseGet("1.2.840.113549.1.9.1");
-        userAccount.email = email;
-        userAccount.caOIDCN = Option.ofNullable((String) params.get("CN"))
-                .orElseGet("2.5.4.3");
-        userAccount.fio = fio;
+        UserAccountInfo userAccount = UserAccountInfo.builder()
+                .caOidUpn(Option.ofNullable((String) params.get("UPN")).orElseGet("1.3.6.1.4.1.311.20.2.3"))
+                .adLogin(ADLogin)
+                .caOidEmail(Option.ofNullable((String) params.get("EMAIL")).orElseGet("1.2.840.113549.1.9.1"))
+                .email(email)
+                .caOidCn(Option.ofNullable((String) params.get("CN")).orElseGet("2.5.4.3"))
+                .fio(fio).build();
 
         ResponseITSKCASoap response = new ResponseITSKCASoap();
         response.appendLog(
@@ -88,7 +85,7 @@ public class ITSKCASoap {
 
         if (resultFindUserCA.isEmpty()) {
             response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
-            response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + userAccount.CAOIDemail + "->" + userAccount.email, this.getClass()));
+            response.appendLog(logFormatter.logError("Error: Not Found CA Users, filter- " + userAccount.getCAOIDemail() + "->" + userAccount.getEmail(), this.getClass()));
             response.setPropertyMap(emptyResult());
             return response;
         }
@@ -221,7 +218,7 @@ public class ITSKCASoap {
         final String keyPhrase = "key";
         final String description = "СУИД:Предоставление доступа в УЦ";
         final String managerComment = "СУИД:Предоставление доступа в УЦ";
-        final String resultSubmitAndAcceptRegRequest = port.getRight().submitAndAcceptRegRequest(folderID, resultSignRequestCABase64.getRight(), userAccount.email, keyPhrase, description, managerComment, Boolean.FALSE);
+        final String resultSubmitAndAcceptRegRequest = port.getRight().submitAndAcceptRegRequest(folderID, resultSignRequestCABase64.getRight(), userAccount.getEmail(), keyPhrase, description, managerComment, Boolean.FALSE);
         //Получить описание запроса на регистрацию + получить UserID
         final String resultgetRegRequestRecord = port.getRight().getRegRequestRecord(resultSubmitAndAcceptRegRequest, "");
         //Парсинг результата поиска пользователя УЦ
@@ -268,7 +265,7 @@ public class ITSKCASoap {
                 && resultParseXML.getRight().size() == 1
                 && !resultParseXML.getRight().get(0).get(0).isEmpty()
                 && !resultCreateTokenForUser.isEmpty()) {
-            response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + userAccount.email, this.getClass()));
+            response.appendLog(logFormatter.log("Create Token for user: " + resultParseXML.getRight().get(0).get(0) + " Email: " + userAccount.getEmail(), this.getClass()));
             response.setResult("SUCCESS");
             response.addEntries(resultCreateTokenForUser.getRight());
             response.addEntry("UserId", resultParseXML.getRight().get(0).get(0));
@@ -281,9 +278,9 @@ public class ITSKCASoap {
         //Сформировать запрос на регисрацию пользователя
         final String request = "<ProfileAttributesChange> \n"
                 + "<To> \n"
-                + "<Attribute Oid=\"" + account.caOIDUPN + "\" Value=\"" + account.ADLogin + "\" /> \n"
-                + "<Attribute Oid=\"" + account.CAOIDemail + "\" Value=\"" + account.email + "\" /> \n"
-                + "<Attribute Oid=\"" + account.caOIDCN + "\" Value=\"" + account.fio + "\" /> \n"
+                + "<Attribute Oid=\"" + account.getCaOIDUPN() + "\" Value=\"" + account.getADLogin() + "\" /> \n"
+                + "<Attribute Oid=\"" + account.getCAOIDemail() + "\" Value=\"" + account.getEmail() + "\" /> \n"
+                + "<Attribute Oid=\"" + account.getCaOIDCN() + "\" Value=\"" + account.getFio() + "\" /> \n"
                 + "</To> \n"
                 + "</ProfileAttributesChange> \n";
         return request;

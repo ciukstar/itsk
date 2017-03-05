@@ -64,7 +64,7 @@ public class UC {
             return findUserCA(folderID, "UserId", userId, 8, port);
         } else {
             //Поск пользователя УЦ по Email
-            return findUserCA(folderID, "OID." + accountInfo.CAOIDemail, accountInfo.email.trim(), 8, port);
+            return findUserCA(folderID, "OID." + accountInfo.getCAOIDemail(), accountInfo.getEmail().trim(), 8, port);
         }
     }
 
