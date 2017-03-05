@@ -8,7 +8,7 @@ import java.util.HashMap;
  */
 public class ResponseITSKCASoap {
 
-    HashMap propertyMap;
+    private final HashMap propertyMap;
     String log = "";
     String result = "ERROR";
 
@@ -41,7 +41,8 @@ public class ResponseITSKCASoap {
     }
 
     public void setPropertyMap(HashMap parametrMap) {
-        this.propertyMap = parametrMap;
+        this.propertyMap.clear();
+        this.propertyMap.putAll(parametrMap);
     }
 
     public void addEntry(String key, Object value) {

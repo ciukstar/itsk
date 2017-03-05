@@ -399,7 +399,7 @@ public class ITSKCASoap {
                             response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                         }
                         response.result = "SUCCESS";
-                        response.propertyMap = result;
+                        response.setPropertyMap(result);
                         return response;
 
                     }
@@ -413,7 +413,7 @@ public class ITSKCASoap {
                 if (resultFindUserCA.isEmpty()) {
                     response.appendLog(logFormatter.logError(getStackTrace(resultFindUserCA.getLeft()), this.getClass()));
                     response.appendLog(logFormatter.logError("Error in process find CA user, filter:" + CAOIDemail + "->" + Email, this.getClass()));
-                    response.propertyMap = result;
+                    response.setPropertyMap(result);
                     return response;
 
                 } else if ((int) resultFindUserCA.getRight().get("resultCount") > 0) {
@@ -435,7 +435,7 @@ public class ITSKCASoap {
 
                             if (CAuserID.isEmpty()) {
                                 response.appendLog(logFormatter.logError("Error: Not parsing result find CA user", this.getClass()));
-                                response.propertyMap = result;
+                                response.setPropertyMap(result);
                                 return response;
                             }
 
@@ -472,13 +472,13 @@ public class ITSKCASoap {
                             }
 
                             response.result = "SUCCESS";
-                            response.propertyMap = result;
+                            response.setPropertyMap(result);
                             return response;
 
                         } else {
                             //Ошибка, не найден ни один пользователь
                             response.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
-                            response.propertyMap = result;
+                            response.setPropertyMap(result);
                             return response;
                         }
                         //Получить список сертификатов пользователя УЦ
@@ -530,20 +530,20 @@ public class ITSKCASoap {
                                     response.appendLog(logFormatter.log("Not found active certificates in CA for user " + Email, this.getClass()));
                                 }
                                 response.result = "SUCCESS";
-                                response.propertyMap = result;
+                                response.setPropertyMap(result);
                                 return response;
 
                             } else {
                                 //Ошибка, найдено больше одного пользователя
                                 response.appendLog(logFormatter.logError("Error: Parsing result found more than one CA user", this.getClass()));
-                                response.propertyMap = result;
+                                response.setPropertyMap(result);
                                 return response;
                             }
                         }
                     }
                 } else {
                     response.appendLog(logFormatter.logError("Error: Not find CA user, filter:" + CAOIDemail + "->" + Email, this.getClass()));
-                    response.propertyMap = result;
+                    response.setPropertyMap(result);
                     return response;
                 }
             }
@@ -554,7 +554,7 @@ public class ITSKCASoap {
             String ss = getStackTrace(e);
             response.appendLog(logFormatter.logError(ss, this.getClass()));
             //LOGGER.log(Level.SEVERE, "Error initialization revokeUser", e);
-            response.propertyMap = result;
+            response.setPropertyMap(result);
             return response;
             //StringWriter sw = new StringWriter();
             //e.printStackTrace(new PrintWriter(sw));
