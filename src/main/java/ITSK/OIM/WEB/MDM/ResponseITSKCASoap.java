@@ -1,16 +1,23 @@
 package ITSK.OIM.WEB.MDM;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
  * @author birillo
  */
-public class ResponseITSKCASoap {
+public class ResponseITSKCASoap implements Response {
 
-    private final HashMap propertyMap;
+    private final Map<String, Object> propertyMap;
     private String log = "";
     private String result = "ERROR";
+
+    ResponseITSKCASoap(Map<String, Object> props, String log, String type) {
+        this.propertyMap = props;
+        this.log = log;
+        this.result = type;
+    }
 
     public ResponseITSKCASoap() {
         this.propertyMap = new HashMap();
@@ -36,7 +43,7 @@ public class ResponseITSKCASoap {
         setResult(value);
     }
     
-    public HashMap getPropertyMap() {
+    public Map<String, Object> getPropertyMap() {
         return propertyMap;
     }
 
