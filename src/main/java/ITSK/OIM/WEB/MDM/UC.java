@@ -52,7 +52,6 @@ public class UC {
 
     public Either<? extends Throwable, Map<String, Object>> findUcUser(
             Map<String, Object> params,
-            String folderID,
             final RegAuthLegacyContract port,
             UserAccountInfo accountInfo
     ) {
@@ -61,10 +60,10 @@ public class UC {
         if (params.get("CAUSERID") != null && !params.get("CAUSERID").toString().trim().isEmpty()) {
             //Поск пользователя УЦ по UserID CA
             final String userId = params.get("CAUSERID").toString().trim();
-            return findUserCA(folderID, "UserId", userId, 8, port);
+            return findUserCA(accountInfo.getFolderId(), "UserId", userId, 8, port);
         } else {
             //Поск пользователя УЦ по Email
-            return findUserCA(folderID, "OID." + accountInfo.getCAOIDemail(), accountInfo.getEmail().trim(), 8, port);
+            return findUserCA(accountInfo.getFolderId(), "OID." + accountInfo.getCAOIDemail(), accountInfo.getEmail().trim(), 8, port);
         }
     }
 

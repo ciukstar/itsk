@@ -11,14 +11,24 @@ public class UserAccountInfo {
     private final String email;
     private final String caOIDCN;
     private final String fio;
+    private final String folderId;
 
-    private UserAccountInfo(String caOIDUPN, String ADLogin, String CAOIDemail, String email, String caOIDCN, String fio) {
+    private UserAccountInfo(
+            String caOIDUPN, 
+            String ADLogin, 
+            String CAOIDemail, 
+            String email, 
+            String caOIDCN, 
+            String fio,
+            String folderId
+    ) {
         this.caOIDUPN = caOIDUPN;
         this.ADLogin = ADLogin;
         this.CAOIDemail = CAOIDemail;
         this.email = email;
         this.caOIDCN = caOIDCN;
         this.fio = fio;
+        this.folderId = folderId;
     }
 
     public String getCaOIDUPN() {
@@ -44,6 +54,10 @@ public class UserAccountInfo {
     public String getFio() {
         return fio;
     }
+
+    public String getFolderId() {
+        return folderId;
+    }
     
     public static CaOidUpnStep builder() {
         return new Steps();
@@ -65,14 +79,17 @@ public class UserAccountInfo {
         public FioStep caOidCn(String value);
     }
     public interface FioStep {
-        public BuildStep fio(String value);
+        public FolderIdStep fio(String value);
+    }
+    public interface FolderIdStep {
+        public BuildStep folderId(String value);
     }
     public interface BuildStep {
         public UserAccountInfo build();
     }
     
     private static class Steps implements CaOidUpnStep, AdLoginStep, CaOidEmailStep,
-            EmailStep, CaOidCnStep, FioStep, BuildStep {
+            EmailStep, CaOidCnStep, FioStep, FolderIdStep, BuildStep {
 
         private String caOidUpn;
         private String adLogin;
@@ -80,6 +97,7 @@ public class UserAccountInfo {
         private String email;
         private String caOidCn;
         private String fio;
+        private String folderId;
 
         @Override
         public AdLoginStep caOidUpn(String value) {
@@ -112,14 +130,23 @@ public class UserAccountInfo {
         }
 
         @Override
-        public BuildStep fio(String value) {
+        public FolderIdStep fio(String value) {
             this.fio = value;
             return this;
         }
 
         @Override
+        public BuildStep folderId(String value) {
+            this.folderId = value;
+            return this;
+        }
+
+        @Override
         public UserAccountInfo build() {
-            return new UserAccountInfo(caOidUpn, adLogin, caOidEmail, email, caOidCn, fio);
+            return new UserAccountInfo(
+                    caOidUpn, adLogin, caOidEmail, 
+                    email, caOidCn, fio, folderId
+            );
         }
         
     }
